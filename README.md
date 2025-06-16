@@ -65,6 +65,7 @@ The device combines the ESP32 Wroom32U, NRF24 modules, an OLED display, and othe
 ### 📶 WiFi Tools
 - **WiFi Scanner** – Detects nearby WiFi access points
 - **WiFi Deauther** – Disrupts 2.4GHz WiFi device communication
+- **Deauth Scanner** – Monitors and analyzes WiFi deauthentication frames in real-time
 - **Beacon Spam** – Broadcasts multiple fake WiFi networks for testing
 - **WLAN Jammer** – Jams wireless communication on selected channels
 

@@ -30,6 +30,7 @@
 #include "../include/deauth.h"
 #include "../include/beacon_spam.h"
 #include "../include/ble_spammer.h"
+#include "../include/deauth_scanner.h"
 #include "../include/pindefs.h"
 
 // Radio pins
@@ -55,7 +56,7 @@ Adafruit_NeoPixel pixels(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 extern uint8_t oledBrightness;
 
 
-const unsigned char* bitmap_icons[15] = {
+const unsigned char* bitmap_icons[16] = {
   bitmap_icon_scanner, // Scanner
   bitmap_icon_analyzer, // Analyzer
   bitmap_icon_jammer, // Jammer
@@ -68,13 +69,14 @@ const unsigned char* bitmap_icons[15] = {
   bitmap_icon_ble, // Flipper Scan
   bitmap_icon_wifi, // WiFi Scan
   bitmap_icon_wifi, // WiFi Deauther
+  bitmap_icon_wifi, // Deauth Scanner
   bitmap_icon_wifi, // Beacon Spam
   bitmap_icon_about, // About
   bitmap_icon_setting // Setting
 };
 
 
-const int NUM_ITEMS = 15;
+const int NUM_ITEMS = 16;
 const int MAX_ITEM_LENGTH = 20; 
 
 char menu_items [NUM_ITEMS] [MAX_ITEM_LENGTH] = {  
@@ -90,6 +92,7 @@ char menu_items [NUM_ITEMS] [MAX_ITEM_LENGTH] = {
   { "Flipper Scan" },
   { "WiFi Scan" },
   { "WiFi Deauther" },
+  { "Deauth Scanner" },
   { "Beacon Spam" },
   { "About" },
   { "Setting" }
@@ -173,10 +176,10 @@ void setup() {
   u8g2.print("by jbohack & zr_crackiin");
 
   u8g2.setFont(u8g2_font_6x10_tf); 
-  int16_t versionWidth = u8g2.getUTF8Width("v2.7.7");
+  int16_t versionWidth = u8g2.getUTF8Width("v2.7.8");
   int16_t versionX = (128 - versionWidth) / 2;
   u8g2.setCursor(versionX, 60);
-  u8g2.print("v2.7.7");
+  u8g2.print("v2.7.8");
   
   u8g2.sendBuffer(); 
   delay(1500);
@@ -229,9 +232,9 @@ void loop() {
      button_select_clicked = 1; 
 
 
-if (current_screen == 0 && item_selected == 14) {
+if (current_screen == 0 && item_selected == 15) {
   settingSetup();
-    while (item_selected == 14) {
+    while (item_selected == 15) {
         if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
             if (callAbout) {
                 settingLoop();
@@ -251,8 +254,8 @@ if (current_screen == 0 && item_selected == 14) {
     }
   }     
 
-if (current_screen == 0 && item_selected == 13) {
-    while (item_selected == 13) {
+if (current_screen == 0 && item_selected == 14) {
+    while (item_selected == 14) {
         if (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
             if (callAbout) {
                 about();
@@ -272,9 +275,9 @@ if (current_screen == 0 && item_selected == 13) {
     }
   }
 
-  if (current_screen == 0 && item_selected == 12) {
+  if (current_screen == 0 && item_selected == 13) {
     beaconSpamSetup();
-    while (item_selected == 12) {
+    while (item_selected == 13) {
         if (digitalRead(BUTTON_SELECT_PIN) == HIGH) { 
             beaconSpamLoop();     
             if (callAbout) {                
@@ -293,6 +296,28 @@ if (current_screen == 0 && item_selected == 13) {
         }
     }
 }
+
+  if (current_screen == 0 && item_selected == 12) {
+    deauthScannerSetup();
+    while (item_selected == 12) {
+        if (digitalRead(BUTTON_SELECT_PIN) == HIGH) { 
+            deauthScannerLoop();     
+            if (callAbout) {                
+                callAbout = false;  // Toggle the state to not call about()
+            } else {
+                break;  // Toggle the state to break the loop
+                callAbout = true;  // Reset the state for the next cycle
+            }
+
+            while (digitalRead(BUTTON_SELECT_PIN) == HIGH) {
+                // Wait for the button to be released
+                if (callAbout = true){
+                  break;
+                }
+            }
+        }
+    }
+  }
 
 
   if (current_screen == 0 && item_selected == 11) {
