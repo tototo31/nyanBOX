@@ -124,9 +124,26 @@ Install the required USB drivers for your ESP32 board:
 
 ---
 
+## ⚠️ Legal Disclaimer
+
+This project is provided for **educational and authorized security research purposes only**.  
+The creators and maintainers of **nyanBOX** disclaim all responsibility for any unauthorized or unlawful use of this software or hardware.  
+It is the sole responsibility of the user to ensure compliance with all applicable local, state, federal, and international laws.
+
+### 📌 Important Notes
+
+- Unauthorized scanning, jamming, or interference with wireless communications may be **illegal** in your jurisdiction.  
+- Always obtain **explicit permission** before testing on networks or devices you do not own.  
+- Certain features may be **restricted or prohibited** in some countries or regions.  
+- The developers assume **no liability** for any damages, legal consequences, or misuse resulting from this project.
+
+By using **nyanBOX**, you agree to use it **only for lawful, ethical, and educational purposes**, and acknowledge your responsibility to remain informed about and compliant with all relevant laws and regulations.
+
+---
+
 ## 📜 License
 
-Distributed under the MIT License. See [LICENSE.txt](LICENSE.txt) for more information.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
