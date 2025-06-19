@@ -34,6 +34,7 @@
 #include "../include/beacon_spam.h"
 #include "../include/pindefs.h"
 #include "../include/blackout.h"
+#include "../include/about.h"
 
 RF24 radios[] = {
   RF24(RADIO_CE_PIN_1, RADIO_CSN_PIN_1),
@@ -62,23 +63,6 @@ struct MenuItem {
   void (*setup)();
   void (*loop)();
 };
-
-void about() {
-  u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_ncenB14_tr);
-  int16_t w = u8g2.getUTF8Width("nyan-BOX");
-  u8g2.setCursor((128-w)/2, 20);
-  u8g2.print("nyan-BOX");
-
-  u8g2.setFont(u8g2_font_6x10_tf);
-  const char* discord = "jbohack & zr_crackiin";
-  w = u8g2.getUTF8Width(discord);
-  u8g2.setCursor((128-w)/2, 40);
-  u8g2.print(discord);
-  u8g2.drawStr(7, 60, "defcon.lullaby.cafe");
-
-  u8g2.sendBuffer();
-}
 
 enum AppMenuState { APP_MAIN, APP_BLE, APP_WIFI, APP_OTHER };
 AppMenuState currentState = APP_MAIN;
@@ -134,7 +118,7 @@ MenuItem otherMenu[] = {
   { "Scanner",      nullptr, scannerSetup,    scannerLoop    },
   { "Analyzer",     nullptr, analyzerSetup,   analyzerLoop   },
   { "Setting",      nullptr, settingSetup,    settingLoop    },
-  { "About",        nullptr, about,           about          },
+  { "About",        nullptr, aboutSetup,      aboutLoop      },
   { "Back",         nullptr, nullptr,         nullptr        }
 };
 constexpr int OTHER_MENU_SIZE = sizeof(otherMenu) / sizeof(otherMenu[0]);
@@ -213,10 +197,10 @@ void setup() {
   u8g2.print("by jbohack & zr_crackiin");
 
   u8g2.setFont(u8g2_font_6x10_tf); 
-  int16_t versionWidth = u8g2.getUTF8Width("v2.8.3");
+  int16_t versionWidth = u8g2.getUTF8Width("v2.8.4");
   int16_t versionX = (128 - versionWidth) / 2;
   u8g2.setCursor(versionX, 60);
-  u8g2.print("v2.8.3");
+  u8g2.print("v2.8.4");
   
   u8g2.sendBuffer(); 
   delay(1500);
