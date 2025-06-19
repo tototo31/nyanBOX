@@ -45,6 +45,17 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 Adafruit_NeoPixel pixels(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 extern uint8_t oledBrightness;
 
+unsigned long upLastMillis    = 0;
+unsigned long upNextRepeat    = 0;
+bool         upPressed        = false;
+
+unsigned long downLastMillis  = 0;
+unsigned long downNextRepeat  = 0;
+bool         downPressed      = false;
+
+const unsigned long initialDelay   = 500;
+const unsigned long repeatInterval = 250;
+
 struct MenuItem {
   const char* name;
   const unsigned char* icon;
@@ -71,14 +82,14 @@ void about() {
 
 enum AppMenuState { APP_MAIN, APP_BLE, APP_WIFI, APP_OTHER };
 AppMenuState currentState = APP_MAIN;
-MenuItem*  currentMenuItems = nullptr;
-int        currentMenuSize  = 0;
-int        item_selected    = 0;
+MenuItem*    currentMenuItems = nullptr;
+int          currentMenuSize  = 0;
+int          item_selected    = 0;
 
 constexpr uint8_t BUTTON_UP    = BUTTON_PIN_UP;
 constexpr uint8_t BUTTON_SEL   = BUTTON_PIN_CENTER;
 constexpr uint8_t BUTTON_DOWN  = BUTTON_PIN_DOWN;
-bool upPrev = false, downPrev = false, selPrev = false;
+bool selPrev = false;
 
 bool justPressed(uint8_t pin, bool &prev) {
   bool now = digitalRead(pin) == LOW;
@@ -202,10 +213,10 @@ void setup() {
   u8g2.print("by jbohack & zr_crackiin");
 
   u8g2.setFont(u8g2_font_6x10_tf); 
-  int16_t versionWidth = u8g2.getUTF8Width("v2.8.1");
+  int16_t versionWidth = u8g2.getUTF8Width("v2.8.2");
   int16_t versionX = (128 - versionWidth) / 2;
   u8g2.setCursor(versionX, 60);
-  u8g2.print("v2.8.1");
+  u8g2.print("v2.8.2");
   
   u8g2.sendBuffer(); 
   delay(1500);
@@ -225,30 +236,52 @@ void setup() {
 }
 
 void loop() {
-  if (justPressed(BUTTON_UP, upPrev) && item_selected > 0)   item_selected--;
-  if (justPressed(BUTTON_DOWN, downPrev) && item_selected < currentMenuSize - 1) item_selected++;
+  bool upNow   = (digitalRead(BUTTON_UP)   == LOW);
+  bool downNow = (digitalRead(BUTTON_DOWN) == LOW);
+
+  if (upNow) {
+    if (!upPressed) {
+      if (item_selected > 0) item_selected--;
+      upLastMillis = millis();
+      upNextRepeat = upLastMillis + initialDelay;
+    }
+    else if (millis() >= upNextRepeat) {
+      if (item_selected > 0) item_selected--;
+      upNextRepeat += repeatInterval;
+    }
+  }
+  upPressed = upNow;
+
+  if (downNow) {
+    if (!downPressed) {
+      if (item_selected < currentMenuSize - 1) item_selected++;
+      downLastMillis = millis();
+      downNextRepeat = downLastMillis + initialDelay;
+    }
+    else if (millis() >= downNextRepeat) {
+      if (item_selected < currentMenuSize - 1) item_selected++;
+      downNextRepeat += repeatInterval;
+    }
+  }
+  downPressed = downNow;
 
   if (justPressed(BUTTON_SEL, selPrev)) {
     MenuItem &sel = currentMenuItems[item_selected];
     if (currentState == APP_MAIN) {
-      if (strcmp(sel.name, "BLE")==0) enterMenu(APP_BLE);
-      else if (strcmp(sel.name, "WiFi")==0) enterMenu(APP_WIFI);
-      else if (strcmp(sel.name, "Other")==0) enterMenu(APP_OTHER);
+      if (strcmp(sel.name, "BLE") == 0) enterMenu(APP_BLE);
+      else if (strcmp(sel.name, "WiFi") == 0) enterMenu(APP_WIFI);
+      else if (strcmp(sel.name, "Other") == 0) enterMenu(APP_OTHER);
     } else {
-      if (strcmp(sel.name, "Back")==0) enterMenu(APP_MAIN);
+      if (strcmp(sel.name, "Back") == 0) enterMenu(APP_MAIN);
       else runApp(sel);
     }
   }
 
   u8g2.clearBuffer();
-  
   int start;
-  if (item_selected == 0)
-    start = 0;
-  else if (item_selected == currentMenuSize - 1)
-    start = max(0, currentMenuSize - 3);
-  else
-    start = item_selected - 1;
+  if (item_selected == 0) start = 0;
+  else if (item_selected == currentMenuSize - 1) start = max(0, currentMenuSize - 3);
+  else start = item_selected - 1;
 
   static const int yPos[3]   = {15, 37, 59};
   static const int boxY[3]   = { 0, 22, 44};
