@@ -157,7 +157,7 @@ void runApp(MenuItem &mi) {
         mi.loop();
         if (digitalRead(BUTTON_PIN_CENTER) == LOW) {
           while (digitalRead(BUTTON_PIN_CENTER) == LOW);
-          if (mi.setup == blackoutSetup || mi.setup == jammerSetup) {
+          if (mi.setup == blackoutSetup || mi.setup == jammerSetup || mi.setup == blejammerSetup) {
             for (auto &r : radios) r.powerDown();
             esp_wifi_start();
           }
