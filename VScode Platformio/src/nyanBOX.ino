@@ -37,6 +37,7 @@
 #include "../include/pindefs.h"
 #include "../include/blackout.h"
 #include "../include/about.h"
+#include "../include/channel_analyzer.h"
 
 RF24 radios[] = {
   RF24(RADIO_CE_PIN_1, RADIO_CSN_PIN_1),
@@ -164,6 +165,7 @@ constexpr int MAIN_MENU_SIZE = sizeof(mainMenu) / sizeof(mainMenu[0]);
 
 MenuItem wifiMenu[] = {
   { "WiFi Scan",       nullptr, wifiscanSetup,           wifiscanLoop,           cleanupWiFi },
+  { "Channel Analyzer", nullptr, channelAnalyzerSetup,   channelAnalyzerLoop,    cleanupWiFi },
   { "WiFi Deauther",   nullptr, deauthSetup,             deauthLoop,             cleanupWiFi },
   { "Deauth Scanner",  nullptr, deauthScannerSetup,      deauthScannerLoop,      cleanupWiFi },
   { "Beacon Spam",     nullptr, beaconSpamSetup,         beaconSpamLoop,         cleanupWiFi },
