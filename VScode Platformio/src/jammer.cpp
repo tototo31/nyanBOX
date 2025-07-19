@@ -240,53 +240,46 @@ void jammerLoop() {
   paPrev = vPa;
 
   u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_ncenB08_tr);
-  u8g2.setCursor(0, 10);
-  u8g2.print("Channel : ");
-  u8g2.setCursor(80, 10);
-  u8g2.print("[" + String(channels) + "]");
-  u8g2.setCursor(0, 25);
-  u8g2.print("PA Level: ");
-  u8g2.setCursor(80, 25);
-  switch (paLevelIndex) {
-  case 0:
-    u8g2.print("MIN");
-    break;
-  case 1:
-    u8g2.print("LOW");
-    break;
-  case 2:
-    u8g2.print("HIGH");
-    break;
-  case 3:
-    u8g2.print("MAX");
-    break;
-  }
-  u8g2.setCursor(0, 40);
-  u8g2.print("Data Rate: ");
-  u8g2.setCursor(80, 40);
-  switch (dataRateIndex) {
-  case 0:
-    u8g2.print("250KBPS");
-    break;
-  case 1:
-    u8g2.print("1MBPS");
-    break;
-  case 2:
-    u8g2.print("2MBPS");
-    break;
-  }
-  u8g2.setCursor(0, 60);
-  u8g2.print("Jamming: ");
+  
+  u8g2.setFont(u8g2_font_helvB10_tr);
+  const char* title = "WLAN Jammer";
+  int titleWidth = u8g2.getUTF8Width(title);
+  u8g2.drawStr((128 - titleWidth) / 2, 12, title);
+  u8g2.drawHLine(16, 15, 96);
+  
+  u8g2.setFont(u8g2_font_helvB08_tr);
   if (jamming) {
-    u8g2.setCursor(80, 60);
-    u8g2.print("Active ");
+    const char* status = "ACTIVE";
+    int statusWidth = u8g2.getUTF8Width(status);
+    u8g2.drawStr((128 - statusWidth) / 2, 26, status);
     setNeoPixelColour("red");
     jammer();
   } else {
-    u8g2.setCursor(80, 60);
-    u8g2.print("disable ");
+    const char* status = "STOPPED";
+    int statusWidth = u8g2.getUTF8Width(status);
+    u8g2.drawStr((128 - statusWidth) / 2, 26, status);
     setNeoPixelColour("0");
   }
+  
+  u8g2.setFont(u8g2_font_helvR08_tr);
+  char settingsText[48];
+  const char* rateLabels[] = {"250K", "1M", "2M"};
+  const char* powerLabels[] = {"MIN", "LOW", "HI", "MAX"};
+  
+  snprintf(settingsText, sizeof(settingsText), "Ch %d | %s | %s", channels, rateLabels[dataRateIndex], powerLabels[paLevelIndex]);
+  int settingsWidth = u8g2.getUTF8Width(settingsText);
+  u8g2.drawStr((128 - settingsWidth) / 2, 36, settingsText);
+  
+  u8g2.setFont(u8g2_font_4x6_tr);
+  
+  const char* line1 = "UP=START/STOP  DOWN=CH";
+  const char* line2 = "R=RATE  L=PWR  SEL=EXIT";
+  
+  int line1Width = u8g2.getUTF8Width(line1);
+  int line2Width = u8g2.getUTF8Width(line2);
+  
+  u8g2.drawStr((128 - line1Width) / 2, 54, line1);
+  u8g2.drawStr((128 - line2Width) / 2, 62, line2);
+  
   u8g2.sendBuffer();
 }
