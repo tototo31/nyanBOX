@@ -5,6 +5,7 @@
 */
 
 #include "../include/pwnagotchi_spam.h"
+#include "../include/sleep_manager.h"
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 
@@ -178,11 +179,13 @@ void pwnagotchiSpamLoop() {
     
     if (digitalRead(BUTTON_PIN_UP) == LOW) {
         spamActive = !spamActive;
+        updateLastActivity();
         delay(200);
     }
     
     if (digitalRead(BUTTON_PIN_DOWN) == LOW) {
         dosMode = !dosMode;
+        updateLastActivity();
         delay(200);
     }
 

@@ -5,6 +5,7 @@
 */
 
 #include "../include/channel_analyzer.h"
+#include "../include/sleep_manager.h"
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 
@@ -259,11 +260,13 @@ void channelAnalyzerLoop() {
     
     if (upNow && !upPressed) {
         currentView = (currentView - 1 + 3) % 3;
+        updateLastActivity();
         delay(200);
     }
     
     if (downNow && !downPressed) {
         currentView = (currentView + 1) % 3;
+        updateLastActivity();
         delay(200);
     }
     

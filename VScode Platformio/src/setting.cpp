@@ -7,6 +7,7 @@
 #include <U8g2lib.h>
 
 #include "../include/setting.h"
+#include "../include/sleep_manager.h"
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 extern Adafruit_NeoPixel pixels;
@@ -54,6 +55,7 @@ void handleButtons() {
   if (!digitalRead(BUTTON_UP)) {
     if (!buttonUpPressed) {
       buttonUpPressed = true;
+      updateLastActivity();
       currentOption = (currentOption - 1 + totalOptions) % totalOptions;
     }
   } else {
@@ -63,6 +65,7 @@ void handleButtons() {
   if (!digitalRead(BUTTON_DOWN)) {
     if (!buttonDownPressed) {
       buttonDownPressed = true;
+      updateLastActivity();
       currentOption = (currentOption + 1) % totalOptions;
     }
   } else {
@@ -72,6 +75,7 @@ void handleButtons() {
   if (!digitalRead(BUTTON_SELECT)) {
     if (!buttonSelectPressed) {
       buttonSelectPressed = true;
+      updateLastActivity();
       toggleOption(currentOption);
     }
   } else {

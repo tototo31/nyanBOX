@@ -4,6 +4,7 @@
    ________________________________________ */
 
 #include "../include/jammer.h"
+#include "../include/sleep_manager.h"
 #include "../include/pindefs.h"
 #include "esp_wifi.h"
 #include <Arduino.h>
@@ -213,6 +214,7 @@ void jammerLoop() {
   unsigned long now = millis();
   bool vCh = digitalRead(CHANNEL_BTN);
   if (!vCh && chPrev && now - chLast > debounce) {
+    updateLastActivity();
     pressChannel();
     chLast = now;
   }
@@ -220,6 +222,7 @@ void jammerLoop() {
 
   bool vJam = digitalRead(JAM_BTN);
   if (!vJam && jamPrev && now - jamLast > debounce) {
+    updateLastActivity();
     pressJam();
     jamLast = now;
   }
@@ -227,6 +230,7 @@ void jammerLoop() {
 
   bool vRate = digitalRead(RATE_BTN);
   if (!vRate && ratePrev && now - rateLast > debounce) {
+    updateLastActivity();
     pressRate();
     rateLast = now;
   }
@@ -234,6 +238,7 @@ void jammerLoop() {
 
   bool vPa = digitalRead(PA_BTN);
   if (!vPa && paPrev && now - paLast > debounce) {
+    updateLastActivity();
     pressPa();
     paLast = now;
   }

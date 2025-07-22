@@ -4,6 +4,7 @@
    ________________________________________ */
 
 #include "../include/spoofer.h"
+#include "../include/sleep_manager.h"
 #include "../include/pindefs.h"
 #include <Arduino.h>
 
@@ -215,14 +216,17 @@ void spooferSetup() {
 
 void spooferLoop() {
   if (digitalRead(DEVICE_NEXT_BTN) == LOW) {
+    updateLastActivity();
     delay(50);
     changeDeviceNext();
   }
   if (digitalRead(DEVICE_PREV_BTN) == LOW) {
+    updateLastActivity();
     delay(50);
     changeDevicePrev();
   }
   if (digitalRead(ADV_CONTROL_BTN) == LOW) {
+    updateLastActivity();
     delay(50);
     toggleAdvertising();
   }

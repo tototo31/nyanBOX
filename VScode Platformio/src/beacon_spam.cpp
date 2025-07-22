@@ -5,6 +5,7 @@
 */
 
 #include "../include/beacon_spam.h"
+#include "../include/sleep_manager.h"
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 
@@ -223,6 +224,10 @@ void beaconSpamLoop() {
   bool down = digitalRead(BUTTON_PIN_DOWN) == LOW;
   bool left = digitalRead(BUTTON_PIN_LEFT) == LOW;
   bool right = digitalRead(BUTTON_PIN_RIGHT) == LOW;
+  
+  if (up || down || left || right) {
+    updateLastActivity();
+  }
 
   bool anySelected = false;
   for (const auto& entry : scannedSSIDs) if (entry.selected) { anySelected = true; break; }

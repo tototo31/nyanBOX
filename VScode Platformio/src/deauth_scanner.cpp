@@ -5,6 +5,7 @@
 */
 
 #include "../include/deauth_scanner.h"
+#include "../include/sleep_manager.h"
 #include "../include/pindefs.h"
 #include <U8g2lib.h>
 #include <esp_wifi.h>

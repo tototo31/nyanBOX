@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include "snake.h"
+#include "../include/sleep_manager.h"
 #include <esp_system.h>
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
@@ -34,10 +35,22 @@ void snakeSetup(){
 }
 
 void snakeLoop(){
-  if(digitalRead(BUTTON_PIN_UP)==LOW && dir!=2) dir=0;
-  else if(digitalRead(BUTTON_PIN_RIGHT)==LOW && dir!=3) dir=1;
-  else if(digitalRead(BUTTON_PIN_DOWN)==LOW && dir!=0) dir=2;
-  else if(digitalRead(BUTTON_PIN_LEFT)==LOW && dir!=1) dir=3;
+  if(digitalRead(BUTTON_PIN_UP)==LOW && dir!=2) {
+    dir=0;
+    updateLastActivity();
+  }
+  else if(digitalRead(BUTTON_PIN_RIGHT)==LOW && dir!=3) {
+    dir=1;
+    updateLastActivity();
+  }
+  else if(digitalRead(BUTTON_PIN_DOWN)==LOW && dir!=0) {
+    dir=2;
+    updateLastActivity();
+  }
+  else if(digitalRead(BUTTON_PIN_LEFT)==LOW && dir!=1) {
+    dir=3;
+    updateLastActivity();
+  }
 
   if(millis() - lastMove >= INTERVAL){
     lastMove = millis();

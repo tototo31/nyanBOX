@@ -5,6 +5,7 @@
 */
 
 #include "../include/deauth.h"
+#include "../include/sleep_manager.h"
 #include "../include/pindefs.h"
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
@@ -189,6 +190,10 @@ void deauthLoop() {
   bool down = digitalRead(BUTTON_PIN_DOWN) == LOW;
   bool left = digitalRead(BUTTON_PIN_LEFT) == LOW;
   bool right = digitalRead(BUTTON_PIN_RIGHT) == LOW;
+  
+  if (up || down || left || right) {
+    updateLastActivity();
+  }
 
   switch (currentMode) {
   case MODE_MENU:

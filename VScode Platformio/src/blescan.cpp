@@ -6,6 +6,7 @@
 */
 
 #include "../include/blescan.h"
+#include "../include/sleep_manager.h"
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 
@@ -144,19 +145,23 @@ void blescanLoop() {
       --currentIndex;
       if (currentIndex < listStartIndex)
         --listStartIndex;
+      updateLastActivity();
       lastButtonPress = now;
     } else if (!isDetailView && digitalRead(BTN_DOWN) == LOW &&
                currentIndex < (int)bleDevices.size() - 1) {
       ++currentIndex;
       if (currentIndex >= listStartIndex + 5)
         ++listStartIndex;
+      updateLastActivity();
       lastButtonPress = now;
     } else if (!isDetailView && digitalRead(BTN_RIGHT) == LOW &&
                !bleDevices.empty()) {
       isDetailView = true;
+      updateLastActivity();
       lastButtonPress = now;
     } else if (digitalRead(BTN_BACK) == LOW) {
       isDetailView = false;
+      updateLastActivity();
       lastButtonPress = now;
     }
   }
