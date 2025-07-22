@@ -17,7 +17,11 @@ extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 #define CHANNEL_MAX 13
 #define CHANNEL_HOP_INTERVAL 1500
 
-static uint8_t currentChannel = CHANNEL_MIN;
+static bool useMainChannels = true;  // true = channels 1,6,11 only, false = all channels 1-13
+static const uint8_t mainChannels[] = {1, 6, 11};
+static const int numMainChannels = sizeof(mainChannels) / sizeof(mainChannels[0]);
+static int currentChannelIndex = 0;
+static uint8_t currentChannel = 1;
 static uint16_t deauthCount = 0;
 static uint16_t totalDeauths = 0;
 
@@ -85,6 +89,10 @@ void deauthScannerSetup() {
     esp_wifi_set_promiscuous_filter(&filter);
     esp_wifi_set_promiscuous_rx_cb(packetSniffer);
     esp_wifi_set_promiscuous(true);
+    
+    useMainChannels = true;
+    currentChannelIndex = 0;
+    currentChannel = mainChannels[currentChannelIndex];
     esp_wifi_set_channel(currentChannel, WIFI_SECOND_CHAN_NONE);
 
     deauthCount = 0;
@@ -96,37 +104,62 @@ void deauthScannerSetup() {
 }
 
 void renderDeauthStats() {
-    char chanStr[32];
+    char headerStr[32];
     char countStr[32];
     char totalStr[32];
     char macStr[18];
-    char macChanStr[32];
 
-    snprintf(chanStr, sizeof(chanStr), "Channel: %2d", currentChannel);
-    snprintf(countStr, sizeof(countStr), "Deauths: %4d", deauthCount);
-    snprintf(totalStr, sizeof(totalStr), "Total:   %4d", totalDeauths);
+    const char* modeText = useMainChannels ? "Main Channels" : "All Channels";
+    snprintf(headerStr, sizeof(headerStr), "CH:%2d | %s", currentChannel, modeText);
+    snprintf(totalStr, sizeof(totalStr), "Total: %4d", totalDeauths);
     formatMAC(macStr, lastDeauthMAC);
 
-    if (!macSeen) {
-        snprintf(macChanStr, sizeof(macChanStr), "Seen on: N/A");
-    } else {
-        snprintf(macChanStr, sizeof(macChanStr), "Seen on: CH %2d", lastDeauthChannel);
-    }
-
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_6x10_tf);
-    u8g2.drawStr(0, 10, chanStr);
-    u8g2.drawStr(0, 20, countStr);
-    u8g2.drawStr(0, 30, totalStr);
-    u8g2.drawStr(0, 45, "Last MAC:");
-    u8g2.drawStr(0, 55, macStr);
-    u8g2.drawStr(0, 64, macChanStr);
+    
+    u8g2.setFont(u8g2_font_helvR08_tr);
+    int headerWidth = u8g2.getUTF8Width(headerStr);
+    u8g2.drawStr((128 - headerWidth) / 2, 12, headerStr);
+    
+    char currentStr[32];
+    snprintf(currentStr, sizeof(currentStr), "Current: %4d", deauthCount);
+    int currentWidth = u8g2.getUTF8Width(currentStr);
+    u8g2.drawStr((128 - currentWidth) / 2, 24, currentStr);
+    
+    int totalWidth = u8g2.getUTF8Width(totalStr);
+    u8g2.drawStr((128 - totalWidth) / 2, 36, totalStr);
+    
+    u8g2.setFont(u8g2_font_5x8_tr);
+    if (macSeen) {
+        const char* macLabel = "Last MAC:";
+        int macLabelWidth = u8g2.getUTF8Width(macLabel);
+        u8g2.drawStr((128 - macLabelWidth) / 2, 46, macLabel);
+        
+        char macChanStr[24];
+        snprintf(macChanStr, sizeof(macChanStr), "%s CH%d", macStr, lastDeauthChannel);
+        int macChanWidth = u8g2.getUTF8Width(macChanStr);
+        u8g2.drawStr((128 - macChanWidth) / 2, 54, macChanStr);
+    } else {
+        const char* waitMsg = "Scanning for deauths...";
+        int waitWidth = u8g2.getUTF8Width(waitMsg);
+        u8g2.drawStr((128 - waitWidth) / 2, 50, waitMsg);
+    }
+    
+    u8g2.setFont(u8g2_font_4x6_tr);
+    const char* instruction = "LEFT=Mode  SEL=Exit";
+    int instrWidth = u8g2.getUTF8Width(instruction);
+    u8g2.drawStr((128 - instrWidth) / 2, 64, instruction);
+    
     u8g2.sendBuffer();
 }
 
 void hopChannel() {
-    currentChannel++;
-    if (currentChannel > CHANNEL_MAX) currentChannel = CHANNEL_MIN;
+    if (useMainChannels) {
+        currentChannelIndex = (currentChannelIndex + 1) % numMainChannels;
+        currentChannel = mainChannels[currentChannelIndex];
+    } else {
+        currentChannel++;
+        if (currentChannel > CHANNEL_MAX) currentChannel = CHANNEL_MIN;
+    }
 
     esp_wifi_set_channel(currentChannel, WIFI_SECOND_CHAN_NONE);
     deauthCount = 0;
@@ -134,6 +167,23 @@ void hopChannel() {
 
 void deauthScannerLoop() {
     unsigned long now = millis();
+    
+    if (digitalRead(BUTTON_PIN_LEFT) == LOW) {
+        useMainChannels = !useMainChannels;
+        
+        if (useMainChannels) {
+            currentChannelIndex = 0;
+            currentChannel = mainChannels[currentChannelIndex];
+        } else {
+            currentChannel = CHANNEL_MIN;
+        }
+        
+        esp_wifi_set_channel(currentChannel, WIFI_SECOND_CHAN_NONE);
+        deauthCount = 0;
+        updateLastActivity();
+        delay(200);
+    }
+    
     if (now - lastChannelHop >= CHANNEL_HOP_INTERVAL) {
         hopChannel();
         lastChannelHop = now;
