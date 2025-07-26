@@ -20,6 +20,7 @@ struct WiFiNetworkData {
   uint8_t channel;
   uint8_t encryption;
   unsigned long lastSeen;
+  char authMode[16];
 };
 static std::vector<WiFiNetworkData> wifiNetworks;
 
@@ -34,6 +35,21 @@ const unsigned long debounceTime = 200;
 static bool isScanning = false;
 static unsigned long lastScanTime = 0;
 const unsigned long scanInterval = 180000;
+
+const char* getAuthModeString(uint8_t encType) {
+    switch (encType) {
+        case WIFI_AUTH_OPEN: return "Open";
+        case WIFI_AUTH_WEP: return "WEP";
+        case WIFI_AUTH_WPA_PSK: return "WPA-PSK";
+        case WIFI_AUTH_WPA2_PSK: return "WPA2-PSK";
+        case WIFI_AUTH_WPA_WPA2_PSK: return "WPA/WPA2-PSK";
+        case WIFI_AUTH_WPA2_ENTERPRISE: return "WPA2-Enterprise";
+        case WIFI_AUTH_WPA3_PSK: return "WPA3-PSK";
+        case WIFI_AUTH_WPA2_WPA3_PSK: return "WPA2/WPA3-PSK";
+        case WIFI_AUTH_WAPI_PSK: return "WAPI-PSK";
+        default: return "Unknown";
+    }
+}
 
 void wifiscanSetup() {
   wifiNetworks.clear();
@@ -97,6 +113,10 @@ void wifiscanLoop() {
             newNetwork.channel = channel;
             newNetwork.encryption = encryption;
             newNetwork.lastSeen = now;
+            
+            strncpy(newNetwork.authMode, getAuthModeString(encryption), sizeof(newNetwork.authMode) - 1);
+            newNetwork.authMode[sizeof(newNetwork.authMode) - 1] = '\0';
+            
             if (!ssid.isEmpty()) {
               strncpy(newNetwork.ssid, ssid.c_str(), sizeof(newNetwork.ssid) - 1);
               newNetwork.ssid[sizeof(newNetwork.ssid) - 1] = '\0';
@@ -190,9 +210,12 @@ void wifiscanLoop() {
     u8g2.drawStr(0, 30, buf);
     snprintf(buf, sizeof(buf), "Channel: %d", net.channel);
     u8g2.drawStr(0, 40, buf);
-    snprintf(buf, sizeof(buf), "Age: %lus", (now - net.lastSeen) / 1000);
+    snprintf(buf, sizeof(buf), "Auth: %s", net.authMode);
     u8g2.drawStr(0, 50, buf);
-    u8g2.drawStr(0, 60, "Press LEFT to go back");
+    snprintf(buf, sizeof(buf), "%lus", (now - net.lastSeen) / 1000);
+    int ageWidth = u8g2.getUTF8Width(buf);
+    u8g2.drawStr(128 - ageWidth, 60, buf);
+    u8g2.drawStr(0, 60, "<- Back");
   } else {
     u8g2.setFont(u8g2_font_6x10_tr);
     char header[32];
