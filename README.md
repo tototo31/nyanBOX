@@ -66,6 +66,7 @@ The device combines the ESP32 Wroom32U, NRF24 modules, an OLED display, and othe
 
 ### 🔵 Bluetooth (BLE) Tools
 - **BLE Scanner** – Detects nearby BLE devices
+- **nyanBOX Detector** – Discovers nearby nyanBOX devices and displays their information including level, version, and signal strength.
 - **Flipper Scanner** – Detects nearby Flipper Zero devices
 - **BLE Spammer** – Broadcasts BLE advertisement packets for testing
 - **BLE Jammer** – Disrupts BLE device communication
@@ -87,8 +88,9 @@ nyanBOX features a built-in RPG-style leveling system that tracks your usage thr
 - **Level Display** – Current level shown on main menu, detailed stats accessible via RIGHT arrow
 - **Progress Persistence** – Level data saved to EEPROM, survives power cycles
 - **XP Reset** – Reset progress via Settings menu if desired
+- **Device Networking** – Your level and version are automatically broadcasted to nearby nyanBOX devices for discovery
 
-Hit RIGHT in the main menu to check your stats. Level up by tinkering with RF signals and unlock ranks as you progress.
+Hit RIGHT in the main menu to check your stats. Level up by tinkering with RF signals and unlock ranks as you progress. Other nyanBOX users can see your progress when they scan for nearby devices!
 
 ---
 

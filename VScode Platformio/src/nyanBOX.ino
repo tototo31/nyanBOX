@@ -40,6 +40,8 @@
 #include "../include/channel_analyzer.h"
 #include "../include/pwnagotchi_spam.h"
 #include "../include/level_system.h"
+#include "../include/nyanbox_detector.h"
+#include "../include/nyanbox_advertiser.h"
 
 RF24 radios[] = {
   RF24(RADIO_CE_PIN_1, RADIO_CSN_PIN_1),
@@ -261,6 +263,7 @@ constexpr int WIFI_MENU_SIZE = sizeof(wifiMenu) / sizeof(wifiMenu[0]);
 
 MenuItem bleMenu[] = {
   { "BLE Scan",     nullptr, blescanSetup,             blescanLoop,             cleanupBLE },
+  { "nyanBOX Detector", nullptr, nyanboxDetectorSetup,         nyanboxDetectorLoop,         cleanupBLE },
   { "Flipper Zero Detector", nullptr, flipperZeroDetectorSetup, flipperZeroDetectorLoop, cleanupBLE },
   { "BLE Spammer",  nullptr, bleSpamSetup,             bleSpamLoop,             cleanupBLE },
   { "BLE Jammer",   nullptr, blejammerSetup,           blejammerLoop,           cleanupRadio },
@@ -283,6 +286,13 @@ constexpr int OTHER_MENU_SIZE = sizeof(otherMenu) / sizeof(otherMenu[0]);
 void enterMenu(AppMenuState st) {
   currentState = st;
   item_selected = 0;
+  
+  if (st == APP_MAIN) {
+    startNyanboxAdvertiser();
+  } else {
+    stopNyanboxAdvertiser();
+  }
+  
   switch (st) {
     case APP_MAIN:
       currentMenuItems = mainMenu;
@@ -398,11 +408,15 @@ void setup() {
 
   levelSystemSetup();
   enterMenu(APP_MAIN);
+  
+  initNyanboxAdvertiser();
+  startNyanboxAdvertiser();
 }
 
 void loop() {
   checkIdle();
   updateAppXP();
+  updateNyanboxAdvertiser();
 
   bool upNow = (digitalRead(BUTTON_PIN_UP) == LOW);
   bool downNow = (digitalRead(BUTTON_PIN_DOWN) == LOW);
@@ -469,6 +483,9 @@ void loop() {
   if (currentState == APP_LEVEL) {
     levelSystemLoop();
   } else {
+    if (currentState == APP_MAIN) {
+      updateNyanboxAdvertiser();
+    }
     u8g2.clearBuffer();
     
     int start;
@@ -504,9 +521,9 @@ void loop() {
       int levelWidth = u8g2.getUTF8Width(levelStr);
       u8g2.drawStr(128 - levelWidth, 8, levelStr);
       
-      const char* hint = "Level Menu ->";
-      int hintWidth = u8g2.getUTF8Width(hint);
-      u8g2.drawStr(128 - hintWidth, 64, hint);
+      const char* rightHint = "Level Menu ->";
+      int rightHintWidth = u8g2.getUTF8Width(rightHint);
+      u8g2.drawStr(128 - rightHintWidth, 64, rightHint);
     }
 
     u8g2.sendBuffer();
