@@ -113,7 +113,7 @@ void nextChannel() {
   esp_wifi_set_channel(wifi_channel, WIFI_SECOND_CHAN_NONE);
 }
 
-enum BeaconSpamMode { BEACON_SPAM_MENU, BEACON_SPAM_CLONE_ALL, BEACON_SPAM_CLONE_SELECTED, BEACON_SPAM_CUSTOM };
+enum BeaconSpamMode { BEACON_SPAM_MENU, BEACON_SPAM_CLONE_ALL, BEACON_SPAM_CLONE_SELECTED, BEACON_SPAM_CUSTOM, BEACON_SPAM_RANDOM };
 static BeaconSpamMode beaconSpamMode = BEACON_SPAM_MENU;
 static int menuSelection = 0;
 static int ssidIndex = 0;
@@ -131,12 +131,13 @@ static unsigned long lastScanTime = 0;
 void drawBeaconSpamMenu() {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
-  u8g2.drawStr(0, 12, "Beacon Spam Mode:");
-  u8g2.drawStr(0, 26, menuSelection == 0 ? "> Clone All" : "  Clone All");
-  u8g2.drawStr(0, 38, menuSelection == 1 ? "> Clone Selected" : "  Clone Selected");
-  u8g2.drawStr(0, 50, menuSelection == 2 ? "> Custom" : "  Custom");
+  u8g2.drawStr(0, 10, "Beacon Spam Mode:");
+  u8g2.drawStr(0, 22, menuSelection == 0 ? "> Clone All" : "  Clone All");
+  u8g2.drawStr(0, 32, menuSelection == 1 ? "> Clone Selected" : "  Clone Selected");
+  u8g2.drawStr(0, 42, menuSelection == 2 ? "> Custom" : "  Custom");
+  u8g2.drawStr(0, 52, menuSelection == 3 ? "> Random" : "  Random");
   u8g2.setFont(u8g2_font_5x8_tr);
-  u8g2.drawStr(0, 62, "U/D=Move R=OK SEL=Exit");
+  u8g2.drawStr(0, 64, "U/D=Move R=OK SEL=Exit");
   u8g2.sendBuffer();
 }
 
@@ -242,15 +243,23 @@ void beaconSpamLoop() {
     case BEACON_SPAM_MENU:
       drawBeaconSpamMenu();
       if (up) {
-        menuSelection = (menuSelection - 1 + 3) % 3;
+        menuSelection = (menuSelection - 1 + 4) % 4;
         delay(200);
       }
       if (down) {
-        menuSelection = (menuSelection + 1) % 3;
+        menuSelection = (menuSelection + 1) % 4;
         delay(200);
       }
       if (right) {
-        beaconSpamMode = (menuSelection == 0 ? BEACON_SPAM_CLONE_ALL : (menuSelection == 1 ? BEACON_SPAM_CLONE_SELECTED : BEACON_SPAM_CUSTOM));
+        if (menuSelection == 0) {
+          beaconSpamMode = BEACON_SPAM_CLONE_ALL;
+        } else if (menuSelection == 1) {
+          beaconSpamMode = BEACON_SPAM_CLONE_SELECTED;
+        } else if (menuSelection == 2) {
+          beaconSpamMode = BEACON_SPAM_CUSTOM;
+        } else {
+          beaconSpamMode = BEACON_SPAM_RANDOM;
+        }
         if (beaconSpamMode == BEACON_SPAM_CLONE_ALL || beaconSpamMode == BEACON_SPAM_CLONE_SELECTED) {
           updateSSIDList();
         }
@@ -417,6 +426,64 @@ void beaconSpamLoop() {
       }
       if (left) {
         beaconSpamMode = BEACON_SPAM_MENU;
+        delay(200);
+      }
+      break;
+    case BEACON_SPAM_RANDOM:
+      if (currentTime - lastDisplayUpdate >= 250) {
+        lastDisplayUpdate = currentTime;
+        u8g2.clearBuffer();
+        u8g2.setFont(u8g2_font_6x10_tr);
+        u8g2.drawStr(0, 10, "Beacon Spam: Random");
+        char status[32];
+        snprintf(status, sizeof(status), "Channel: %d", wifi_channel);
+        u8g2.drawStr(0, 25, status);
+        u8g2.setFont(u8g2_font_5x8_tr);
+        u8g2.drawStr(0, 55, "L=Back SEL=Exit");
+        u8g2.sendBuffer();
+      }
+      {
+        static unsigned long lastRandom = 0;
+        static int randomChannelIndex = 0;
+        const int randomChannels[] = {1, 6, 11};
+        static uint8_t randomBatchesSinceSwitch = 0;
+        
+        if (currentTime - lastRandom >= 50) {
+          for (int b = 0; b < 5; b++) {
+            String randomSSID = "";
+            int length = random(5, 33);
+            const char chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+            for (int i = 0; i < length; i++) {
+              randomSSID += chars[random(strlen(chars))];
+            }
+            
+            randomMac();
+            memcpy(&beaconPacket[10], macAddr, 6);
+            memcpy(&beaconPacket[16], macAddr, 6);
+            memset(&beaconPacket[38], ' ', 32);
+            uint8_t len = randomSSID.length();
+            if (len > 32) len = 32;
+            memcpy(&beaconPacket[38], randomSSID.c_str(), len);
+            beaconPacket[37] = len;
+            beaconPacket[82] = wifi_channel;
+            uint32_t timestamp = micros();
+            memcpy(&beaconPacket[24], &timestamp, 4);
+            esp_wifi_80211_tx(WIFI_IF_STA, beaconPacket, packetSize, false);
+          }
+          
+          if (++randomBatchesSinceSwitch >= 4) {
+            randomBatchesSinceSwitch = 0;
+            wifi_channel = randomChannels[randomChannelIndex];
+            randomChannelIndex = (randomChannelIndex + 1) % 3;
+            esp_wifi_set_channel(wifi_channel, WIFI_SECOND_CHAN_NONE);
+          }
+          
+          lastRandom = currentTime;
+        }
+      }
+      if (left) {
+        beaconSpamMode = BEACON_SPAM_MENU;
+        menuSelection = 3;
         delay(200);
       }
       break;
