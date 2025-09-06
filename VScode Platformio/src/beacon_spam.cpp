@@ -113,7 +113,7 @@ void nextChannel() {
   esp_wifi_set_channel(wifi_channel, WIFI_SECOND_CHAN_NONE);
 }
 
-enum BeaconSpamMode { BEACON_SPAM_MENU, BEACON_SPAM_CLONE_ALL, BEACON_SPAM_CLONE_SELECTED, BEACON_SPAM_RANDOM };
+enum BeaconSpamMode { BEACON_SPAM_MENU, BEACON_SPAM_CLONE_ALL, BEACON_SPAM_CLONE_SELECTED, BEACON_SPAM_CUSTOM };
 static BeaconSpamMode beaconSpamMode = BEACON_SPAM_MENU;
 static int menuSelection = 0;
 static int ssidIndex = 0;
@@ -134,7 +134,7 @@ void drawBeaconSpamMenu() {
   u8g2.drawStr(0, 12, "Beacon Spam Mode:");
   u8g2.drawStr(0, 26, menuSelection == 0 ? "> Clone All" : "  Clone All");
   u8g2.drawStr(0, 38, menuSelection == 1 ? "> Clone Selected" : "  Clone Selected");
-  u8g2.drawStr(0, 50, menuSelection == 2 ? "> Random" : "  Random");
+  u8g2.drawStr(0, 50, menuSelection == 2 ? "> Custom" : "  Custom");
   u8g2.setFont(u8g2_font_5x8_tr);
   u8g2.drawStr(0, 62, "U/D=Move R=OK SEL=Exit");
   u8g2.sendBuffer();
@@ -250,7 +250,7 @@ void beaconSpamLoop() {
         delay(200);
       }
       if (right) {
-        beaconSpamMode = (menuSelection == 0 ? BEACON_SPAM_CLONE_ALL : (menuSelection == 1 ? BEACON_SPAM_CLONE_SELECTED : BEACON_SPAM_RANDOM));
+        beaconSpamMode = (menuSelection == 0 ? BEACON_SPAM_CLONE_ALL : (menuSelection == 1 ? BEACON_SPAM_CLONE_SELECTED : BEACON_SPAM_CUSTOM));
         if (beaconSpamMode == BEACON_SPAM_CLONE_ALL || beaconSpamMode == BEACON_SPAM_CLONE_SELECTED) {
           updateSSIDList();
         }
@@ -338,12 +338,12 @@ void beaconSpamLoop() {
         }
       }
       break;
-    case BEACON_SPAM_RANDOM:
+    case BEACON_SPAM_CUSTOM:
       if (currentTime - lastDisplayUpdate >= 250) {
         lastDisplayUpdate = currentTime;
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_6x10_tr);
-        u8g2.drawStr(0, 10, "Beacon Spam: Random");
+        u8g2.drawStr(0, 10, "Beacon Spam: Custom");
         char status[32];
         snprintf(status, sizeof(status), "Channel: %d", wifi_channel);
         u8g2.drawStr(0, 25, status);
