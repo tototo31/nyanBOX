@@ -11,8 +11,10 @@
 #include <Adafruit_NeoPixel.h>
 
 extern bool neoPixelActive;
+extern bool dangerousActionsEnabled;
 
 void settingSetup();
 void settingLoop();
+bool isDangerousActionsEnabled();
 
 #endif

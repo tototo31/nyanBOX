@@ -5,201 +5,196 @@
 
 #include <EEPROM.h>
 #include <U8g2lib.h>
+#include <Arduino.h>
 
 #include "../include/setting.h"
 #include "../include/sleep_manager.h"
 #include "../include/level_system.h"
+#include "../include/legal_disclaimer.h"
+#include "../include/pindefs.h"
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
-extern Adafruit_NeoPixel pixels;
-
-#define BUTTON_UP 26
-#define BUTTON_DOWN 33
-#define BUTTON_SELECT 27
-#define BUTTON_LEFT 25
-#define BUTTON_RIGHT 27
 
 #define EEPROM_ADDRESS_NEOPIXEL 0
 #define EEPROM_ADDRESS_BRIGHTNESS 1
+#define EEPROM_ADDRESS_DANGEROUS_MODE 2
 
-int currentOption = 0;
-int totalOptions = 3;
+int currentSetting = 0;
+int totalSettings = 4;
 bool neoPixelActive = false;
 uint8_t oledBrightness = 100;
-
-bool buttonUpPressed = false;
-bool buttonDownPressed = false;
-bool buttonSelectPressed = false;
-bool buttonLeftPressed = false;
-bool buttonRightPressed = false;
-
+extern bool dangerousActionsEnabled;
 bool showResetConfirm = false;
 
-void toggleOption(int option) {
-  if (option == 0) { 
-    neoPixelActive = !neoPixelActive;
-    EEPROM.write(EEPROM_ADDRESS_NEOPIXEL, neoPixelActive);
+void handleDangerousActions() {
+  if (!dangerousActionsEnabled) {
+    if (showLegalDisclaimer()) {
+      dangerousActionsEnabled = true;
+      EEPROM.write(EEPROM_ADDRESS_DANGEROUS_MODE, 1);
+      EEPROM.commit();
+    }
+  } else {
+    dangerousActionsEnabled = false;
+    EEPROM.write(EEPROM_ADDRESS_DANGEROUS_MODE, 0);
     EEPROM.commit();
-    Serial.print("NeoPixel is now ");
-    Serial.println(neoPixelActive ? "Enabled" : "Disabled");
-  } else if (option == 1) { 
-    uint8_t brightnessPercent = map(oledBrightness, 0, 255, 0, 100); // Map to 0-100
-    brightnessPercent += 10; // Increment brightness by 10%
-    if (brightnessPercent > 100) brightnessPercent = 0; // Wrap around to 0
-    oledBrightness = map(brightnessPercent, 0, 100, 0, 255); // Map back to 0-255
-
-    u8g2.setContrast(oledBrightness); // Apply the brightness
-    EEPROM.write(EEPROM_ADDRESS_BRIGHTNESS, oledBrightness);
-    EEPROM.commit();
-
-    Serial.print("Brightness set to: ");
-    Serial.print(brightnessPercent);
-    Serial.println("%");
   }
 }
 
-void handleButtons() {
-  if (!digitalRead(BUTTON_UP)) {
-    if (!buttonUpPressed) {
-      buttonUpPressed = true;
-      updateLastActivity();
+
+void settingSetup() {
+  uint8_t neoPixelValue = EEPROM.read(EEPROM_ADDRESS_NEOPIXEL);
+  uint8_t brightnessValue = EEPROM.read(EEPROM_ADDRESS_BRIGHTNESS);
+
+  neoPixelActive = (neoPixelValue == 1);
+
+  if (brightnessValue > 255) {
+    oledBrightness = 128;
+  } else {
+    oledBrightness = brightnessValue;
+  }
+
+  u8g2.setContrast(oledBrightness);
+
+  currentSetting = 0;
+  showResetConfirm = false;
+}
+
+void settingLoop() {
+  static bool upPressed = false;
+  static bool downPressed = false;
+  static bool rightPressed = false;
+  static bool leftPressed = false;
+
+  checkIdle();
+
+  bool up = !digitalRead(BUTTON_PIN_UP);
+  bool down = !digitalRead(BUTTON_PIN_DOWN);
+  bool right = !digitalRead(BUTTON_PIN_RIGHT);
+  bool left = !digitalRead(BUTTON_PIN_LEFT);
+
+  if (up || down || right || left) {
+    updateLastActivity();
+  }
+
+  if (up) {
+    if (!upPressed) {
+      upPressed = true;
       if (!showResetConfirm) {
-        currentOption = (currentOption - 1 + totalOptions) % totalOptions;
+        currentSetting = (currentSetting - 1 + totalSettings) % totalSettings;
       }
     }
   } else {
-    buttonUpPressed = false;
+    upPressed = false;
   }
 
-  if (!digitalRead(BUTTON_DOWN)) {
-    if (!buttonDownPressed) {
-      buttonDownPressed = true;
-      updateLastActivity();
+  if (down) {
+    if (!downPressed) {
+      downPressed = true;
       if (!showResetConfirm) {
-        currentOption = (currentOption + 1) % totalOptions;
+        currentSetting = (currentSetting + 1) % totalSettings;
       }
     }
   } else {
-    buttonDownPressed = false;
+    downPressed = false;
   }
 
-  if (!digitalRead(BUTTON_RIGHT)) {
-    if (!buttonRightPressed) {
-      buttonRightPressed = true;
-      updateLastActivity();
+  if (right) {
+    if (!rightPressed) {
+      rightPressed = true;
+
       if (showResetConfirm) {
         resetXPData();
-        Serial.println("XP data reset confirmed by user");
         showResetConfirm = false;
-      } else if (currentOption == 2) {
-        showResetConfirm = true;
       } else {
-        toggleOption(currentOption);
+        switch (currentSetting) {
+          case 0:
+            neoPixelActive = !neoPixelActive;
+            EEPROM.write(EEPROM_ADDRESS_NEOPIXEL, neoPixelActive ? 1 : 0);
+            EEPROM.commit();
+            break;
+
+          case 1:
+            {
+              uint8_t percent = map(oledBrightness, 0, 255, 0, 100);
+              percent += 10;
+              if (percent > 100) percent = 0;
+              oledBrightness = map(percent, 0, 100, 0, 255);
+              u8g2.setContrast(oledBrightness);
+              EEPROM.write(EEPROM_ADDRESS_BRIGHTNESS, oledBrightness);
+              EEPROM.commit();
+            }
+            break;
+
+          case 2:
+            handleDangerousActions();
+            break;
+
+          case 3:
+            showResetConfirm = true;
+            break;
+        }
       }
     }
   } else {
-    buttonRightPressed = false;
+    rightPressed = false;
   }
 
-  if (!digitalRead(BUTTON_LEFT)) {
-    if (!buttonLeftPressed) {
-      buttonLeftPressed = true;
-      updateLastActivity();
+  if (left) {
+    if (!leftPressed) {
+      leftPressed = true;
       if (showResetConfirm) {
         showResetConfirm = false;
       }
     }
   } else {
-    buttonLeftPressed = false;
+    leftPressed = false;
   }
-}
 
-void displayMenu() {
   u8g2.clearBuffer();
 
-  // Draw menu header
   if (showResetConfirm) {
-    u8g2.setFont(u8g2_font_helvR08_tr);
-    const char* title = "Reset XP Data?";
-    int titleWidth = u8g2.getUTF8Width(title);
-    u8g2.drawStr((128 - titleWidth) / 2, 20, title);
-    
-    const char* warning = "This will reset to Level 1";
-    int warningWidth = u8g2.getUTF8Width(warning);
-    u8g2.drawStr((128 - warningWidth) / 2, 35, warning);
-    
-    u8g2.setFont(u8g2_font_5x8_tr);
-    const char* instruction = "LEFT=Cancel RIGHT=Confirm";
-    int instrWidth = u8g2.getUTF8Width(instruction);
-    u8g2.drawStr((128 - instrWidth) / 2, 55, instruction);
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    int titleWidth = u8g2.getUTF8Width("Reset XP Data?");
+    u8g2.drawStr((128 - titleWidth) / 2, 20, "Reset XP Data?");
+
+    u8g2.setFont(u8g2_font_6x10_tr);
+    int messageWidth = u8g2.getUTF8Width("Reset to Level 1");
+    u8g2.drawStr((128 - messageWidth) / 2, 35, "Reset to Level 1");
+
+    u8g2.setFont(u8g2_font_4x6_tr);
+    int buttonWidth = u8g2.getUTF8Width("LEFT=Cancel  RIGHT=Confirm");
+    u8g2.drawStr((128 - buttonWidth) / 2, 55, "LEFT=Cancel  RIGHT=Confirm");
   } else {
-    u8g2.setFont(u8g2_font_6x10_tf);
-    u8g2.drawStr(0, 10, "Settings Menu");
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.drawStr(45, 12, "Settings");
 
-    // Draw menu options
-    if (currentOption == 0) {
-      u8g2.drawStr(0, 25, "> NeoPixel: ");
-    } else {
-      u8g2.drawStr(0, 25, "  NeoPixel: ");
-    }
+    u8g2.setFont(u8g2_font_6x10_tr);
 
-    if (currentOption == 1) {
-      u8g2.drawStr(0, 37, "> Brightness: ");
-    } else {
-      u8g2.drawStr(0, 37, "  Brightness: ");
-    }
+    if (currentSetting == 0) u8g2.drawStr(2, 25, ">");
+    u8g2.drawStr(10, 25, "NeoPixel:");
+    u8g2.drawStr(85, 25, neoPixelActive ? "On" : "Off");
 
-    if (currentOption == 2) {
-      u8g2.drawStr(0, 49, "> Reset XP: ");
-    } else {
-      u8g2.drawStr(0, 49, "  Reset XP: ");
-    }
+    if (currentSetting == 1) u8g2.drawStr(2, 37, ">");
+    u8g2.drawStr(10, 37, "Brightness:");
+    char brightStr[8];
+    sprintf(brightStr, "%d%%", (int)map(oledBrightness, 0, 255, 0, 100));
+    u8g2.drawStr(85, 37, brightStr);
 
-    // Show current settings
-    u8g2.setCursor(80, 25);
-    u8g2.print(neoPixelActive ? "Enabled" : "Disabled");
+    if (currentSetting == 2) u8g2.drawStr(2, 49, ">");
+    u8g2.drawStr(10, 49, "Dangerous:");
+    u8g2.drawStr(85, 49, dangerousActionsEnabled ? "On" : "Off");
 
-    u8g2.setCursor(80, 37);
-    uint8_t brightnessPercent = map(oledBrightness, 0, 255, 0, 100);
-    u8g2.print(brightnessPercent);
-    u8g2.print("%");
-
-    u8g2.setCursor(80, 49);
-    char levelStr[16];
-    sprintf(levelStr, "Lv%d", getCurrentLevel());
-    u8g2.print(levelStr);
-    
-    u8g2.setFont(u8g2_font_5x8_tr);
-    const char* instruction = "SEL=Exit  RIGHT=Edit";
-    int instrWidth = u8g2.getUTF8Width(instruction);
-    u8g2.drawStr((128 - instrWidth) / 2, 64, instruction);
+    if (currentSetting == 3) u8g2.drawStr(2, 61, ">");
+    u8g2.drawStr(10, 61, "Reset XP:");
+    char lvlStr[8];
+    sprintf(lvlStr, "Lv%d", getCurrentLevel());
+    u8g2.drawStr(85, 61, lvlStr);
   }
 
   u8g2.sendBuffer();
 }
 
-void settingSetup() {
-  Serial.begin(115200);
-
-  // Initialize EEPROM
-  EEPROM.begin(512);
-
-  // Load settings from EEPROM
-  neoPixelActive = EEPROM.read(EEPROM_ADDRESS_NEOPIXEL);
-  oledBrightness = EEPROM.read(EEPROM_ADDRESS_BRIGHTNESS);
-  
-  if (oledBrightness > 255) oledBrightness = 128; // Ensure valid brightness
-  u8g2.setContrast(oledBrightness);
-
-  // Initialize buttons
-  pinMode(BUTTON_UP, INPUT_PULLUP);
-  pinMode(BUTTON_DOWN, INPUT_PULLUP);
-  pinMode(BUTTON_SELECT, INPUT_PULLUP);
-  pinMode(BUTTON_LEFT, INPUT_PULLUP);
-  pinMode(BUTTON_RIGHT, INPUT_PULLUP);
+bool isDangerousActionsEnabled() {
+  return dangerousActionsEnabled;
 }
 
-void settingLoop() {
-  handleButtons();
-  displayMenu();
-}

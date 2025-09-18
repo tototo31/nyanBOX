@@ -54,6 +54,8 @@ The device combines the ESP32 Wroom32U, NRF24 modules, an OLED display, and othe
 
 ## 🎯 Features
 
+> **⚠️ Note:** Some advanced jamming applications require enabling "Dangerous Actions" in the Settings menu and accepting a legal agreement before use.
+
 ### 📶 WiFi Tools
 - **WiFi Scanner** – Detects nearby WiFi access points
 - **Channel Analyzer** – Monitors WiFi channel utilization and signal strength for network planning

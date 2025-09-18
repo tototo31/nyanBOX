@@ -43,6 +43,7 @@
 #include "../include/nyanbox_detector.h"
 #include "../include/nyanbox_advertiser.h"
 #include "../include/evil_portal.h"
+#include "../include/legal_disclaimer.h"
 
 RF24 radios[] = {
   RF24(RADIO_CE_PIN_1, RADIO_CSN_PIN_1),
@@ -53,6 +54,16 @@ RF24 radios[] = {
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 Adafruit_NeoPixel pixels(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 extern uint8_t oledBrightness;
+
+struct MenuItem {
+  const char* name;
+  const unsigned char* icon;
+  void (*setup)();
+  void (*loop)();
+  void (*cleanup)();
+};
+
+bool dangerousActionsEnabled = false;
 
 const char* nyanboxVersion = NYANBOX_VERSION;
 const unsigned long idleTimeout = 120000;
@@ -115,14 +126,6 @@ void drawSelection(int x, int y, int width, int height, bool selected) {
 
 enum AppMenuState { APP_MAIN, APP_BLE, APP_WIFI, APP_OTHER, APP_LEVEL };
 
-struct MenuItem {
-  const char* name;
-  const unsigned char* icon;
-  void (*setup)();
-  void (*loop)();
-  void (*cleanup)();
-};
-
 int getXPAmount(const char* appName) {
   if (isReconApp(appName)) {
     return 3;
@@ -141,14 +144,21 @@ bool isReconApp(const char* appName) {
          strstr(appName, "Analyzer") != nullptr;
 }
 
+bool isDangerousApp(const char* appName) {
+  return strstr(appName, "Jammer") != nullptr ||
+         strstr(appName, "Proto Kill") != nullptr;
+}
+
 bool isOffensiveApp(const char* appName) {
-  return strstr(appName, "Jammer") != nullptr || 
-         strstr(appName, "Deauth") != nullptr ||
+  if (isDangerousApp(appName)) {
+    return true;
+  }
+
+  return strstr(appName, "Deauth") != nullptr ||
          strstr(appName, "Spam") != nullptr ||
          strstr(appName, "Sour Apple") != nullptr ||
          strstr(appName, "Spoofer") != nullptr ||
-         strstr(appName, "Evil Portal") != nullptr ||
-         strstr(appName, "Proto Kill") != nullptr;
+         strstr(appName, "Evil Portal") != nullptr;
 }
 
 bool isUtilityApp(const char* appName) {
@@ -186,6 +196,35 @@ bool justPressed(uint8_t pin, bool &prev) {
   if (!now) prev = false;
   return false;
 }
+
+bool shouldShowApp(const char* appName) {
+  return !isDangerousApp(appName) || isDangerousActionsEnabled();
+}
+
+int getVisibleMenuSize() {
+  int count = 0;
+  for (int i = 0; i < currentMenuSize; i++) {
+    if (shouldShowApp(currentMenuItems[i].name)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+MenuItem* getVisibleMenuItem(int visibleIndex) {
+  int visibleCount = 0;
+  for (int i = 0; i < currentMenuSize; i++) {
+    if (shouldShowApp(currentMenuItems[i].name)) {
+      if (visibleCount == visibleIndex) {
+        return &currentMenuItems[i];
+      }
+      visibleCount++;
+    }
+  }
+
+  return &currentMenuItems[0];
+}
+
 
 void startAppTracking(const char* appName) {
   currentAppName = appName;
@@ -309,14 +348,20 @@ constexpr int OTHER_MENU_SIZE = sizeof(otherMenu) / sizeof(otherMenu[0]);
 
 void enterMenu(AppMenuState st) {
   currentState = st;
-  item_selected = 0;
-  
+
+  int previousSelection = item_selected;
+  const char* previousAppName = nullptr;
+
+  if (item_selected < getVisibleMenuSize()) {
+    previousAppName = getVisibleMenuItem(item_selected)->name;
+  }
+
   if (st == APP_MAIN) {
     startNyanboxAdvertiser();
   } else {
     stopNyanboxAdvertiser();
   }
-  
+
   switch (st) {
     case APP_MAIN:
       currentMenuItems = mainMenu;
@@ -335,19 +380,29 @@ void enterMenu(AppMenuState st) {
       currentMenuSize  = OTHER_MENU_SIZE;
       break;
   }
+
+  item_selected = 0;
+  if (previousAppName && st != APP_MAIN) {
+    for (int i = 0; i < getVisibleMenuSize(); i++) {
+      if (strcmp(getVisibleMenuItem(i)->name, previousAppName) == 0) {
+        item_selected = i;
+        break;
+      }
+    }
+  }
 }
 
 void runApp(MenuItem &mi) {
   if (!mi.setup) return;
-  
+
   startAppTracking(mi.name);
-  
+
   if (isReconApp(mi.name)) {
     pulseColor(0, 0, 255);  // Blue
   } else if (isOffensiveApp(mi.name)) {
     pulseColor(25, 21, 22); // Pink
   }
-  
+
   mi.setup();
   updateLastActivity();
   displayOff = false;
@@ -392,6 +447,9 @@ void setup() {
 
   EEPROM.begin(512);
   oledBrightness = EEPROM.read(1);
+
+  uint8_t dangerousValue = EEPROM.read(2);
+  dangerousActionsEnabled = (dangerousValue == 1);
 
   u8g2.begin();
   u8g2.setContrast(oledBrightness);
@@ -470,11 +528,11 @@ void loop() {
   if (downNow) {
     updateLastActivity();
     if (!downPressed) {
-      if (item_selected < currentMenuSize - 1) item_selected++;
+      if (item_selected < getVisibleMenuSize() - 1) item_selected++;
       downLastMillis = millis();
       downNextRepeat = downLastMillis + initialDelay;
     } else if (millis() >= downNextRepeat) {
-      if (item_selected < currentMenuSize - 1) item_selected++;
+      if (item_selected < getVisibleMenuSize() - 1) item_selected++;
       downNextRepeat += repeatInterval;
     }
   }
@@ -483,16 +541,16 @@ void loop() {
   if (justPressed(BUTTON_SEL, selPrev)) {
     updateLastActivity();
     if (currentState != APP_LEVEL) {
-      MenuItem &sel = currentMenuItems[item_selected];
+      MenuItem *sel = getVisibleMenuItem(item_selected);
       if (currentState == APP_MAIN) {
-        if (strcmp(sel.name, "WiFi") == 0) enterMenu(APP_WIFI);
-        else if (strcmp(sel.name, "BLE") == 0) enterMenu(APP_BLE);
-        else if (strcmp(sel.name, "Other") == 0) enterMenu(APP_OTHER);
+        if (strcmp(sel->name, "WiFi") == 0) enterMenu(APP_WIFI);
+        else if (strcmp(sel->name, "BLE") == 0) enterMenu(APP_BLE);
+        else if (strcmp(sel->name, "Other") == 0) enterMenu(APP_OTHER);
       } else {
-        if (strcmp(sel.name, "Back") == 0) {
+        if (strcmp(sel->name, "Back") == 0) {
           enterMenu(APP_MAIN);
         } else {
-          runApp(sel);
+          runApp(*sel);
         }
       }
     }
@@ -523,26 +581,27 @@ void loop() {
     
     int start;
     if (item_selected == 0) start = 0;
-    else if (item_selected == currentMenuSize - 1) start = max(0, currentMenuSize - 3);
+    else if (item_selected == getVisibleMenuSize() - 1) start = max(0, getVisibleMenuSize() - 3);
     else start = item_selected - 1;
 
     int highlight = item_selected - start;
-    
+
     int selectionY = 6 + (highlight * (ITEM_HEIGHT + ITEM_SPACING));
     drawSelection(SELECTION_X, selectionY, SELECTION_WIDTH, ITEM_HEIGHT, true);
 
     for (int i = 0; i < 3; i++) {
       int idx = start + i;
-      if (idx < currentMenuSize) {
+      if (idx < getVisibleMenuSize()) {
+        MenuItem *item = getVisibleMenuItem(idx);
         int itemY = 6 + (i * (ITEM_HEIGHT + ITEM_SPACING));
         int textY = itemY + 11;
-        
+
         u8g2.setFont(u8g2_font_helvR08_tr);
-        u8g2.drawStr(TEXT_X, textY, currentMenuItems[idx].name);
-        
-        if (currentMenuItems[idx].icon) {
+        u8g2.drawStr(TEXT_X, textY, item->name);
+
+        if (item->icon) {
           int iconY = itemY;
-          u8g2.drawXBMP(ICON_X, iconY, 16, 16, currentMenuItems[idx].icon);
+          u8g2.drawXBMP(ICON_X, iconY, 16, 16, item->icon);
         }
       }
     }
