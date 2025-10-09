@@ -204,7 +204,7 @@ void spooferSetup() {
   pinMode(DEVICE_PREV_BTN, INPUT_PULLUP);
   pinMode(ADV_CONTROL_BTN, INPUT_PULLUP);
 
-  randomSeed(micros());
+  randomSeed((uint32_t)esp_random());
 
   BLEDevice::init("nyanBOX Spoofer");
   BLEServer *pServer = BLEDevice::createServer();

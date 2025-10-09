@@ -201,7 +201,7 @@ void airtagSpooferSetup() {
   pinMode(BTN_BACK, INPUT_PULLUP);
   pinMode(BTN_CENTER, INPUT_PULLUP);
 
-  randomSeed(micros());
+  randomSeed((uint32_t)esp_random());
 }
 
 void airtagSpooferLoop() {
