@@ -19,6 +19,7 @@ extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 struct FlipperZeroDeviceData {
   char name[32];
   char address[18];
+  char color[16];
   int8_t rssi;
   bool hasName;
   unsigned long lastSeen;
@@ -43,6 +44,34 @@ static unsigned long lastScanTime = 0;
 const unsigned long scanInterval = 30000;
 
 static int flipperCallbackCount = 0;
+
+const char* getFlipperColor(BLEAdvertisedDevice &device) {
+  if (!device.haveServiceUUID()) {
+    return "Unknown";
+  }
+
+  BLEUUID primaryUUID = device.getServiceUUID();
+  std::string uuidStr = primaryUUID.toString();
+
+  for (auto& c : uuidStr) c = tolower(c);
+
+  if (uuidStr == "00003081-0000-1000-8000-00805f9b34fb") {
+    return "Black";
+  }
+  if (uuidStr == "00003082-0000-1000-8000-00805f9b34fb") {
+    return "White";
+  }
+  if (uuidStr == "00003083-0000-1000-8000-00805f9b34fb") {
+    return "Transparent";
+  }
+
+  if (uuidStr.find("0000308") == 0 &&
+      uuidStr.find("0000-1000-8000-00805f9b34fb") != std::string::npos) {
+    return "Generic";
+  }
+
+  return "Unknown";
+}
 
 class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) override {
@@ -73,11 +102,18 @@ class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
 
     int8_t deviceRSSI = advertisedDevice.getRSSI();
 
+    const char* detectedColor = getFlipperColor(advertisedDevice);
+
     for (int i = 0; i < flipperZeroDevices.size(); i++) {
       if (String(flipperZeroDevices[i].address) == addrStr) {
         flipperZeroDevices[i].rssi = deviceRSSI;
         flipperZeroDevices[i].lastSeen = millis();
-        
+
+        if (strcmp(detectedColor, "Unknown") != 0 && strcmp(detectedColor, "Generic") != 0) {
+          strncpy(flipperZeroDevices[i].color, detectedColor, 15);
+          flipperZeroDevices[i].color[15] = '\0';
+        }
+
         if (!flipperZeroDevices[i].hasName && advertisedDevice.haveName()) {
           std::string nameStd = advertisedDevice.getName();
           if (nameStd.length() > 0 && nameStd.length() < 32) {
@@ -86,7 +122,7 @@ class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
             flipperZeroDevices[i].hasName = true;
           }
         }
-        
+
         std::sort(flipperZeroDevices.begin(), flipperZeroDevices.end(),
                   [](const FlipperZeroDeviceData &a, const FlipperZeroDeviceData &b) {
                     return a.rssi > b.rssi;
@@ -100,7 +136,10 @@ class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     newDev.rssi = deviceRSSI;
     newDev.lastSeen = millis();
     newDev.isFlipperZero = true;
-    
+
+    strncpy(newDev.color, detectedColor, 15);
+    newDev.color[15] = '\0';
+
     strcpy(newDev.name, "Flipper Zero");
     newDev.hasName = false;
 
@@ -247,12 +286,14 @@ void flipperZeroDetectorLoop() {
     char buf[32];
     snprintf(buf, sizeof(buf), "Name: %s", dev.name);
     u8g2.drawStr(0, 10, buf);
-    snprintf(buf, sizeof(buf), "Addr: %s", dev.address);
+    snprintf(buf, sizeof(buf), "MAC: %s", dev.address);
     u8g2.drawStr(0, 20, buf);
-    snprintf(buf, sizeof(buf), "RSSI: %d", dev.rssi);
+    snprintf(buf, sizeof(buf), "Color: %s", dev.color);
     u8g2.drawStr(0, 30, buf);
-    snprintf(buf, sizeof(buf), "Age: %lus", (millis() - dev.lastSeen) / 1000);
+    snprintf(buf, sizeof(buf), "RSSI: %d dBm", dev.rssi);
     u8g2.drawStr(0, 40, buf);
+    snprintf(buf, sizeof(buf), "Age: %lus", (millis() - dev.lastSeen) / 1000);
+    u8g2.drawStr(0, 50, buf);
     u8g2.drawStr(0, 60, "Press LEFT to go back");
   } else {
     u8g2.setFont(u8g2_font_6x10_tr);
