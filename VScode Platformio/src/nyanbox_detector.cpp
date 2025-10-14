@@ -169,7 +169,7 @@ void nyanboxDetectorSetup() {
   pNyanboxScan->setWindow(200);
   
   try {
-    pNyanboxScan->start(3, false);
+    pNyanboxScan->start(SCAN_DURATION / 1000, false);
     nyanboxScanning = true;
     nyanboxLastScanTime = millis();
   } catch (...) {
@@ -194,7 +194,7 @@ void nyanboxDetectorLoop() {
   if (!nyanboxScanning && now - nyanboxLastScanTime > SCAN_INTERVAL) {
     if (pNyanboxScan) {
       try {
-        pNyanboxScan->start(3, false);
+        pNyanboxScan->start(SCAN_DURATION / 1000, false);
         nyanboxScanning = true;
         nyanboxLastScanTime = now;
       } catch (...) {
