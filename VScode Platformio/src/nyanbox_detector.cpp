@@ -41,6 +41,8 @@ static unsigned long nyanboxLastScanTime = 0;
 const unsigned long SCAN_INTERVAL = 30000;
 const unsigned long SCAN_DURATION = 5000;
 
+static int nyanboxCallbackCount = 0;
+static unsigned long lastCallbackTime = 0;
 
 void parseManufacturerData(const std::string &manufData, uint16_t &level,
                            char *version) {
@@ -69,19 +71,34 @@ void parseManufacturerData(const std::string &manufData, uint16_t &level,
 
 class NyanboxAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) override {
-    if (nyanBoxDevices.size() >= MAX_DEVICES) {
-      if (nyanboxScanning) {
+    nyanboxCallbackCount++;
+
+    unsigned long now = millis();
+    if (now - lastCallbackTime < 50) {
+      return;
+    }
+    lastCallbackTime = now;
+
+    if (nyanboxCallbackCount > 500 || nyanBoxDevices.size() >= MAX_DEVICES) {
+      if (nyanboxScanning && pNyanboxScan) {
         pNyanboxScan->stop();
         nyanboxScanning = false;
       }
       return;
     }
 
+    if (nyanBoxDevices.size() > 80 && nyanboxCallbackCount % 2 != 0) return;
+
     if (!advertisedDevice.isAdvertisingService(BLEUUID(NYANBOX_SERVICE_UUID)))
       return;
 
-    const char *deviceAddress =
-        advertisedDevice.getAddress().toString().c_str();
+    BLEAddress addr = advertisedDevice.getAddress();
+    const char *addrCStr = addr.toString().c_str();
+
+    char deviceAddress[18];
+    strncpy(deviceAddress, addrCStr, 17);
+    deviceAddress[17] = '\0';
+
     int8_t deviceRSSI = advertisedDevice.getRSSI();
 
     for (auto &dev : nyanBoxDevices) {
@@ -126,12 +143,15 @@ static NyanboxAdvertisedDeviceCallbacks nyanboxDeviceCallbacks;
 
 
 void nyanboxDetectorSetup() {
-  
+
   nyanBoxDevices.clear();
+  nyanBoxDevices.reserve(MAX_DEVICES);
   currentIndex = listStartIndex = 0;
   isDetailView = false;
   lastButtonPress = 0;
   nyanboxScanning = false;
+  nyanboxCallbackCount = 0;
+  lastCallbackTime = 0;
 
   u8g2.begin();
   u8g2.setFont(u8g2_font_6x10_tr);
@@ -145,8 +165,8 @@ void nyanboxDetectorSetup() {
   pNyanboxScan = BLEDevice::getScan();
   pNyanboxScan->setAdvertisedDeviceCallbacks(&nyanboxDeviceCallbacks);
   pNyanboxScan->setActiveScan(true);
-  pNyanboxScan->setInterval(100);
-  pNyanboxScan->setWindow(99);
+  pNyanboxScan->setInterval(1000);
+  pNyanboxScan->setWindow(200);
   
   try {
     pNyanboxScan->start(3, false);
@@ -166,6 +186,10 @@ void nyanboxDetectorSetup() {
 
 void nyanboxDetectorLoop() {
   unsigned long now = millis();
+
+  if (now - nyanboxLastScanTime > 10000) {
+    nyanboxCallbackCount = 0;
+  }
 
   if (!nyanboxScanning && now - nyanboxLastScanTime > SCAN_INTERVAL) {
     if (pNyanboxScan) {
@@ -265,7 +289,11 @@ void nyanboxDetectorLoop() {
     snprintf(buf, sizeof(buf), "Addr: %s", dev.address);
     u8g2.drawStr(0, 20, buf);
 
-    snprintf(buf, sizeof(buf), "Level: %s", dev.level > 0 ? String(dev.level).c_str() : "Unknown");
+    if (dev.level > 0) {
+      snprintf(buf, sizeof(buf), "Level: %u", dev.level);
+    } else {
+      snprintf(buf, sizeof(buf), "Level: Unknown");
+    }
     u8g2.drawStr(0, 30, buf);
 
     snprintf(buf, sizeof(buf), "Version: %s", dev.version);

@@ -44,6 +44,7 @@ static unsigned long lastScanTime = 0;
 const unsigned long scanInterval = 30000;
 
 static int flipperCallbackCount = 0;
+static unsigned long lastCallbackTime = 0;
 
 const char* getFlipperColor(BLEAdvertisedDevice &device) {
   if (!device.haveServiceUUID()) {
@@ -76,7 +77,13 @@ const char* getFlipperColor(BLEAdvertisedDevice &device) {
 class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) override {
     flipperCallbackCount++;
-    
+
+    unsigned long now = millis();
+    if (now - lastCallbackTime < 50) {
+      return;
+    }
+    lastCallbackTime = now;
+
     if (flipperCallbackCount > 500 || flipperZeroDevices.size() >= MAX_DEVICES) {
       if (isScanning && pBLEScan) {
         pBLEScan->stop();
@@ -88,13 +95,18 @@ class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     if (flipperZeroDevices.size() > 80 && flipperCallbackCount % 2 != 0) return;
 
     BLEAddress addr = advertisedDevice.getAddress();
-    String addrStr = addr.toString().c_str();
-    
-    if (addrStr.length() < 12) return;
-    
-    bool isFlipperZero = addrStr.startsWith(FLIPPERZERO_MAC_PREFIX_1) ||
-                         addrStr.startsWith(FLIPPERZERO_MAC_PREFIX_2) ||
-                         addrStr.startsWith(FLIPPERZERO_MAC_PREFIX_3);
+    const char* addrCStr = addr.toString().c_str();
+
+    char addrStr[18];
+    strncpy(addrStr, addrCStr, 17);
+    addrStr[17] = '\0';
+
+    if (strlen(addrStr) < 12) return;
+
+    bool isFlipperZero = (strncmp(addrStr, "80:e1:26", 8) == 0) ||
+                         (strncmp(addrStr, "80:e1:27", 8) == 0) ||
+                         (strncmp(addrStr, "0c:fa:22", 8) == 0) ||
+                         (strncmp(addrStr, "0C:FA:22", 8) == 0);
     
     if (!isFlipperZero) {
       return;
@@ -105,7 +117,7 @@ class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     const char* detectedColor = getFlipperColor(advertisedDevice);
 
     for (int i = 0; i < flipperZeroDevices.size(); i++) {
-      if (String(flipperZeroDevices[i].address) == addrStr) {
+      if (strcmp(flipperZeroDevices[i].address, addrStr) == 0) {
         flipperZeroDevices[i].rssi = deviceRSSI;
         flipperZeroDevices[i].lastSeen = millis();
 
@@ -132,7 +144,8 @@ class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     }
 
     FlipperZeroDeviceData newDev = {};
-    addrStr.toCharArray(newDev.address, 18);
+    strncpy(newDev.address, addrStr, 17);
+    newDev.address[17] = '\0';
     newDev.rssi = deviceRSSI;
     newDev.lastSeen = millis();
     newDev.isFlipperZero = true;
@@ -161,13 +174,17 @@ class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   }
 };
 
+static MyFlipperAdvertisedDeviceCallbacks flipperCallbacks;
+
 void flipperZeroDetectorSetup() {
   flipperZeroDevices.clear();
+  flipperZeroDevices.reserve(MAX_DEVICES);
   currentIndex = listStartIndex = 0;
   isDetailView = false;
   lastButtonPress = 0;
   isScanning = false;
   flipperCallbackCount = 0;
+  lastCallbackTime = 0;
 
   u8g2.begin();
   u8g2.setFont(u8g2_font_6x10_tr);
@@ -178,7 +195,7 @@ void flipperZeroDetectorSetup() {
 
   BLEDevice::init("FlipperZeroDetector");
   pBLEScan = BLEDevice::getScan();
-  pBLEScan->setAdvertisedDeviceCallbacks(new MyFlipperAdvertisedDeviceCallbacks());
+  pBLEScan->setAdvertisedDeviceCallbacks(&flipperCallbacks);
   pBLEScan->setActiveScan(true);
   pBLEScan->setInterval(1000);
   pBLEScan->setWindow(200);

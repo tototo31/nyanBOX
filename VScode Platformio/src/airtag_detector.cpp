@@ -30,10 +30,17 @@ static unsigned long lastScanTime = 0;
 const unsigned long scanInterval = 30000;
 
 static int airtagCallbackCount = 0;
+static unsigned long lastCallbackTime = 0;
 
 class MyAirTagAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) override {
     airtagCallbackCount++;
+
+    unsigned long now = millis();
+    if (now - lastCallbackTime < 50) {
+      return;
+    }
+    lastCallbackTime = now;
 
     if (airtagCallbackCount > 500 || airtagDevices.size() >= MAX_DEVICES) {
       if (isScanning && pBLEScan) {
@@ -47,6 +54,8 @@ class MyAirTagAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
 
     uint8_t* payLoad = advertisedDevice.getPayload();
     size_t payLoadLength = advertisedDevice.getPayloadLength();
+
+    if (!payLoad || payLoadLength < 4) return;
 
     // Check common AirTag patterns - "1E FF 4C 00" and "4C 00 12 19"
     bool isAirTag = false;
@@ -66,15 +75,21 @@ class MyAirTagAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     }
 
     BLEAddress addr = advertisedDevice.getAddress();
-    String addrStr = addr.toString().c_str();
-    addrStr.toUpperCase();
+    const char* addrCStr = addr.toString().c_str();
 
-    if (addrStr.length() < 12) return;
+    char addrStr[18];
+    strncpy(addrStr, addrCStr, 17);
+    addrStr[17] = '\0';
+    for (int i = 0; addrStr[i]; i++) {
+      addrStr[i] = toupper(addrStr[i]);
+    }
+
+    if (strlen(addrStr) < 12) return;
 
     int8_t deviceRSSI = advertisedDevice.getRSSI();
 
     for (int i = 0; i < airtagDevices.size(); i++) {
-      if (String(airtagDevices[i].address) == addrStr) {
+      if (strcmp(airtagDevices[i].address, addrStr) == 0) {
         airtagDevices[i].rssi = deviceRSSI;
         airtagDevices[i].lastSeen = millis();
 
@@ -92,7 +107,8 @@ class MyAirTagAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     }
 
     AirTagDeviceData newDev = {};
-    addrStr.toCharArray(newDev.address, 18);
+    strncpy(newDev.address, addrStr, 17);
+    newDev.address[17] = '\0';
     newDev.rssi = deviceRSSI;
     newDev.lastSeen = millis();
     newDev.isAirTag = true;
@@ -121,13 +137,17 @@ class MyAirTagAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   }
 };
 
+static MyAirTagAdvertisedDeviceCallbacks airtagCallbacks;
+
 void airtagDetectorSetup() {
   airtagDevices.clear();
+  airtagDevices.reserve(MAX_DEVICES);
   currentIndex = listStartIndex = 0;
   isDetailView = false;
   lastButtonPress = 0;
   isScanning = false;
   airtagCallbackCount = 0;
+  lastCallbackTime = 0;
 
   u8g2.begin();
   u8g2.setFont(u8g2_font_6x10_tr);
@@ -138,10 +158,10 @@ void airtagDetectorSetup() {
 
   BLEDevice::init("AirTagDetector");
   pBLEScan = BLEDevice::getScan();
-  pBLEScan->setAdvertisedDeviceCallbacks(new MyAirTagAdvertisedDeviceCallbacks());
+  pBLEScan->setAdvertisedDeviceCallbacks(&airtagCallbacks);
   pBLEScan->setActiveScan(true);
-  pBLEScan->setInterval(100);
-  pBLEScan->setWindow(99);
+  pBLEScan->setInterval(1000);
+  pBLEScan->setWindow(200);
 
   pBLEScan->start(5, false);
   isScanning = true;

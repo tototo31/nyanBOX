@@ -38,11 +38,18 @@ static unsigned long lastScanTime = 0;
 const unsigned long scanInterval = 180000;
 
 static int callbackCount = 0;
+static unsigned long lastCallbackTime = 0;
 
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) override {
     callbackCount++;
-    
+
+    unsigned long now = millis();
+    if (now - lastCallbackTime < 50) {
+      return;
+    }
+    lastCallbackTime = now;
+
     if (callbackCount > 500 || bleDevices.size() >= MAX_DEVICES) {
       if (isScanning && pBLEScan) {
         pBLEScan->stop();
@@ -54,12 +61,16 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     if (bleDevices.size() > 80 && callbackCount % 2 != 0) return;
 
     BLEAddress addr = advertisedDevice.getAddress();
-    String addrStr = addr.toString().c_str();
-    
-    if (addrStr.length() < 12) return;
-    
+    const char* addrCStr = addr.toString().c_str();
+
+    char addrStr[18];
+    strncpy(addrStr, addrCStr, 17);
+    addrStr[17] = '\0';
+
+    if (strlen(addrStr) < 12) return;
+
     for (int i = 0; i < bleDevices.size(); i++) {
-      if (String(bleDevices[i].address) == addrStr) {
+      if (strcmp(bleDevices[i].address, addrStr) == 0) {
         bleDevices[i].rssi = advertisedDevice.getRSSI();
         bleDevices[i].lastSeen = millis();
         
@@ -72,7 +83,8 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     }
 
     BLEDeviceData newDev = {};
-    addrStr.toCharArray(newDev.address, 18);
+    strncpy(newDev.address, addrStr, 17);
+    newDev.address[17] = '\0';
     newDev.rssi = advertisedDevice.getRSSI();
     newDev.lastSeen = millis();
     
@@ -100,13 +112,17 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   }
 };
 
+static MyAdvertisedDeviceCallbacks blescanCallbacks;
+
 void blescanSetup() {
   bleDevices.clear();
+  bleDevices.reserve(MAX_DEVICES);
   currentIndex = listStartIndex = 0;
   isDetailView = false;
   lastButtonPress = 0;
   isScanning = false;
   callbackCount = 0;
+  lastCallbackTime = 0;
 
   u8g2.begin();
   u8g2.setFont(u8g2_font_6x10_tr);
@@ -117,7 +133,7 @@ void blescanSetup() {
 
   BLEDevice::init("BLEScanner");
   pBLEScan = BLEDevice::getScan();
-  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setAdvertisedDeviceCallbacks(&blescanCallbacks);
   pBLEScan->setActiveScan(true);
   pBLEScan->setInterval(1000);
   pBLEScan->setWindow(200);
