@@ -28,9 +28,6 @@ struct FlipperZeroDeviceData {
 static std::vector<FlipperZeroDeviceData> flipperZeroDevices;
 
 const int MAX_DEVICES = 100;
-const String FLIPPERZERO_MAC_PREFIX_1 = "80:e1:26";
-const String FLIPPERZERO_MAC_PREFIX_2 = "80:e1:27";
-const String FLIPPERZERO_MAC_PREFIX_3 = "0C:FA:22";
 
 int currentIndex = 0;
 int listStartIndex = 0;
@@ -103,10 +100,9 @@ class MyFlipperAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
 
     if (strlen(addrStr) < 12) return;
 
-    bool isFlipperZero = (strncmp(addrStr, "80:e1:26", 8) == 0) ||
-                         (strncmp(addrStr, "80:e1:27", 8) == 0) ||
-                         (strncmp(addrStr, "0c:fa:22", 8) == 0) ||
-                         (strncmp(addrStr, "0C:FA:22", 8) == 0);
+    bool isFlipperZero = (strncasecmp(addrStr, "80:e1:26", 8) == 0) ||
+                         (strncasecmp(addrStr, "80:e1:27", 8) == 0) ||
+                         (strncasecmp(addrStr, "0c:fa:22", 8) == 0);
     
     if (!isFlipperZero) {
       return;
