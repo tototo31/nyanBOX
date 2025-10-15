@@ -47,6 +47,7 @@
 #include "../include/evil_portal.h"
 #include "../include/legal_disclaimer.h"
 #include "../include/cardskimmer_detector.h"
+#include "../include/bodycam_detector.h"
 
 RF24 radios[] = {
   RF24(RADIO_CE_PIN_1, RADIO_CSN_PIN_1),
@@ -348,6 +349,7 @@ MenuItem bleMenu[] = {
   { "BLE Scan",     nullptr, blescanSetup,             blescanLoop,             cleanupBLE },
   { "nyanBOX Detector", nullptr, nyanboxDetectorSetup,         nyanboxDetectorLoop,         cleanupBLE },
   { "Flipper Zero Detector", nullptr, flipperZeroDetectorSetup, flipperZeroDetectorLoop, cleanupBLE },
+  { "Bodycam Detector", nullptr, bodycamDetectorSetup, bodycamDetectorLoop, cleanupBLE },
   { "Skimmer Detector", nullptr, cardskimmerDetectorSetup, cardskimmerDetectorLoop, cleanupBLE },
   { "AirTag Detector", nullptr, airtagDetectorSetup,   airtagDetectorLoop,      cleanupBLE },
   { "AirTag Spoofer", nullptr, airtagSpooferSetup,     airtagSpooferLoop,       cleanupBLE },
