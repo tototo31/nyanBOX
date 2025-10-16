@@ -5,14 +5,14 @@
    ________________________________________
 */
 
-#ifndef BODYCAM_DETECTOR_H
-#define BODYCAM_DETECTOR_H
+#ifndef AXON_DETECTOR_H
+#define AXON_DETECTOR_H
 
 #include <Arduino.h>
 #include <U8g2lib.h>
 #include "config.h"
 
-void bodycamDetectorSetup();
-void bodycamDetectorLoop();
+void axonDetectorSetup();
+void axonDetectorLoop();
 
 #endif

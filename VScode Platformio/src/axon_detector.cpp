@@ -5,7 +5,7 @@
    ________________________________________
 */
 
-#include "../include/bodycam_detector.h"
+#include "../include/axon_detector.h"
 #include "../include/sleep_manager.h"
 #include <BLEDevice.h>
 #include <BLEUtils.h>
@@ -21,14 +21,14 @@ extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 #define BTN_BACK BUTTON_PIN_LEFT
 #define BTN_CENTER BUTTON_PIN_CENTER
 
-struct BodycamDeviceData {
+struct AxonDeviceData {
   char name[32];
   char address[18];
   int8_t rssi;
   unsigned long lastSeen;
 };
 
-static std::vector<BodycamDeviceData> bodycamDevices;
+static std::vector<AxonDeviceData> axonDevices;
 const int MAX_DEVICES = 100;
 
 int currentIndex = 0;
@@ -43,12 +43,12 @@ static unsigned long lastScanTime = 0;
 const unsigned long SCAN_INTERVAL = 30000;
 const unsigned long SCAN_DURATION = 5000;
 
-static int bodycamCallbackCount = 0;
+static int axonCallbackCount = 0;
 static unsigned long lastCallbackTime = 0;
 
-class BodycamAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
+class AxonAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) override {
-    bodycamCallbackCount++;
+    axonCallbackCount++;
 
     unsigned long now = millis();
     if (now - lastCallbackTime < 50) {
@@ -56,7 +56,7 @@ class BodycamAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     }
     lastCallbackTime = now;
 
-    if (bodycamCallbackCount > 500 || bodycamDevices.size() >= MAX_DEVICES) {
+    if (axonCallbackCount > 500 || axonDevices.size() >= MAX_DEVICES) {
       if (isScanning && pBLEScan) {
         pBLEScan->stop();
         isScanning = false;
@@ -64,7 +64,7 @@ class BodycamAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
       return;
     }
 
-    if (bodycamDevices.size() > 80 && bodycamCallbackCount % 2 != 0) return;
+    if (axonDevices.size() > 80 && axonCallbackCount % 2 != 0) return;
 
     BLEAddress addr = advertisedDevice.getAddress();
     const char* addrCStr = addr.toString().c_str();
@@ -81,28 +81,28 @@ class BodycamAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
 
     int8_t deviceRSSI = advertisedDevice.getRSSI();
 
-    for (int i = 0; i < bodycamDevices.size(); i++) {
-      if (strcmp(bodycamDevices[i].address, addrStr) == 0) {
-        bodycamDevices[i].rssi = deviceRSSI;
-        bodycamDevices[i].lastSeen = millis();
+    for (int i = 0; i < axonDevices.size(); i++) {
+      if (strcmp(axonDevices[i].address, addrStr) == 0) {
+        axonDevices[i].rssi = deviceRSSI;
+        axonDevices[i].lastSeen = millis();
 
         if (advertisedDevice.haveName()) {
           std::string nameStd = advertisedDevice.getName();
           if (nameStd.length() > 0 && nameStd.length() < 32) {
-            strncpy(bodycamDevices[i].name, nameStd.c_str(), 31);
-            bodycamDevices[i].name[31] = '\0';
+            strncpy(axonDevices[i].name, nameStd.c_str(), 31);
+            axonDevices[i].name[31] = '\0';
           }
         }
 
-        std::sort(bodycamDevices.begin(), bodycamDevices.end(),
-                  [](const BodycamDeviceData &a, const BodycamDeviceData &b) {
+        std::sort(axonDevices.begin(), axonDevices.end(),
+                  [](const AxonDeviceData &a, const AxonDeviceData &b) {
                     return a.rssi > b.rssi;
                   });
         return;
       }
     }
 
-    BodycamDeviceData newDev = {};
+    AxonDeviceData newDev = {};
     strncpy(newDev.address, addrStr, 17);
     newDev.address[17] = '\0';
     newDev.rssi = deviceRSSI;
@@ -114,43 +114,43 @@ class BodycamAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
         strncpy(newDev.name, nameStd.c_str(), 31);
         newDev.name[31] = '\0';
       } else {
-        strcpy(newDev.name, "Axon Bodycam");
+        strcpy(newDev.name, "Axon Device");
       }
     } else {
-      strcpy(newDev.name, "Axon Bodycam");
+      strcpy(newDev.name, "Axon Device");
     }
 
-    bodycamDevices.push_back(newDev);
+    axonDevices.push_back(newDev);
 
-    std::sort(bodycamDevices.begin(), bodycamDevices.end(),
-              [](const BodycamDeviceData &a, const BodycamDeviceData &b) {
+    std::sort(axonDevices.begin(), axonDevices.end(),
+              [](const AxonDeviceData &a, const AxonDeviceData &b) {
                 return a.rssi > b.rssi;
               });
   }
 };
 
-static BodycamAdvertisedDeviceCallbacks bodycamCallbacks;
+static AxonAdvertisedDeviceCallbacks axonCallbacks;
 
-void bodycamDetectorSetup() {
-  bodycamDevices.clear();
-  bodycamDevices.reserve(MAX_DEVICES);
+void axonDetectorSetup() {
+  axonDevices.clear();
+  axonDevices.reserve(MAX_DEVICES);
   currentIndex = listStartIndex = 0;
   isDetailView = false;
   lastButtonPress = 0;
   isScanning = false;
-  bodycamCallbackCount = 0;
+  axonCallbackCount = 0;
   lastCallbackTime = 0;
 
   u8g2.begin();
   u8g2.setFont(u8g2_font_6x10_tr);
   u8g2.clearBuffer();
-  u8g2.drawStr(0, 10, "Bodycam Detector");
+  u8g2.drawStr(0, 10, "Axon Detector");
   u8g2.drawStr(0, 20, "Initializing...");
   u8g2.sendBuffer();
 
-  BLEDevice::init("BodycamDetector");
+  BLEDevice::init("AxonDetector");
   pBLEScan = BLEDevice::getScan();
-  pBLEScan->setAdvertisedDeviceCallbacks(&bodycamCallbacks);
+  pBLEScan->setAdvertisedDeviceCallbacks(&axonCallbacks);
   pBLEScan->setActiveScan(true);
   pBLEScan->setInterval(1000);
   pBLEScan->setWindow(200);
@@ -166,23 +166,23 @@ void bodycamDetectorSetup() {
   pinMode(BTN_CENTER, INPUT_PULLUP);
 }
 
-void bodycamDetectorLoop() {
+void axonDetectorLoop() {
   unsigned long now = millis();
 
   if (now - lastScanTime > 10000) {
-    bodycamCallbackCount = 0;
+    axonCallbackCount = 0;
   }
 
   if (isScanning && now - lastScanTime > SCAN_DURATION) {
     pBLEScan->stop();
     isScanning = false;
-    bodycamCallbackCount = 0;
+    axonCallbackCount = 0;
     lastScanTime = now;
   }
   else if (!isScanning && now - lastScanTime > SCAN_INTERVAL) {
-    if (bodycamDevices.size() >= MAX_DEVICES) {
-      std::sort(bodycamDevices.begin(), bodycamDevices.end(),
-                [](const BodycamDeviceData &a, const BodycamDeviceData &b) {
+    if (axonDevices.size() >= MAX_DEVICES) {
+      std::sort(axonDevices.begin(), axonDevices.end(),
+                [](const AxonDeviceData &a, const AxonDeviceData &b) {
                   if (a.lastSeen != b.lastSeen) {
                     return a.lastSeen < b.lastSeen;
                   }
@@ -191,14 +191,14 @@ void bodycamDetectorLoop() {
 
       int devicesToRemove = MAX_DEVICES / 4;
       if (devicesToRemove > 0) {
-        bodycamDevices.erase(bodycamDevices.begin(),
-                            bodycamDevices.begin() + devicesToRemove);
+        axonDevices.erase(axonDevices.begin(),
+                            axonDevices.begin() + devicesToRemove);
       }
 
       currentIndex = listStartIndex = 0;
     }
 
-    bodycamCallbackCount = 0;
+    axonCallbackCount = 0;
     pBLEScan->start(SCAN_DURATION / 1000, false);
     isScanning = true;
     lastScanTime = now;
@@ -218,13 +218,13 @@ void bodycamDetectorLoop() {
         --listStartIndex;
       lastButtonPress = now;
     } else if (!isDetailView && digitalRead(BTN_DOWN) == LOW &&
-               currentIndex < (int)bodycamDevices.size() - 1) {
+               currentIndex < (int)axonDevices.size() - 1) {
       ++currentIndex;
       if (currentIndex >= listStartIndex + 5)
         ++listStartIndex;
       lastButtonPress = now;
     } else if (!isDetailView && digitalRead(BTN_RIGHT) == LOW &&
-               !bodycamDevices.empty()) {
+               !axonDevices.empty()) {
       isDetailView = true;
       lastButtonPress = now;
     } else if (digitalRead(BTN_BACK) == LOW) {
@@ -236,26 +236,26 @@ void bodycamDetectorLoop() {
     }
   }
 
-  if (bodycamDevices.empty()) {
+  if (axonDevices.empty()) {
     currentIndex = listStartIndex = 0;
     isDetailView = false;
   } else {
-    currentIndex = constrain(currentIndex, 0, (int)bodycamDevices.size() - 1);
-    listStartIndex = constrain(listStartIndex, 0, max(0, (int)bodycamDevices.size() - 5));
+    currentIndex = constrain(currentIndex, 0, (int)axonDevices.size() - 1);
+    listStartIndex = constrain(listStartIndex, 0, max(0, (int)axonDevices.size() - 5));
   }
 
   u8g2.clearBuffer();
   if (showingRefresh) {
     u8g2.drawStr(0, 10, "Refreshing");
-    u8g2.drawStr(0, 20, "Bodycams...");
+    u8g2.drawStr(0, 20, "Axon Devices...");
     u8g2.sendBuffer();
-  } else if (bodycamDevices.empty()) {
+  } else if (axonDevices.empty()) {
     u8g2.drawStr(0, 10, "Scanning for");
-    u8g2.drawStr(0, 20, "Bodycams...");
+    u8g2.drawStr(0, 20, "Axon Devices...");
     u8g2.drawStr(0, 35, "Nearby: n/a");
     u8g2.drawStr(0, 50, "Press CENTER to exit");
   } else if (isDetailView) {
-    auto &dev = bodycamDevices[currentIndex];
+    auto &dev = axonDevices[currentIndex];
     u8g2.setFont(u8g2_font_5x8_tr);
     char buf[32];
     snprintf(buf, sizeof(buf), "Name: %s", dev.name);
@@ -270,20 +270,20 @@ void bodycamDetectorLoop() {
   } else {
     u8g2.setFont(u8g2_font_6x10_tr);
     char header[32];
-    snprintf(header, sizeof(header), "Bodycams: %d/%d",
-             (int)bodycamDevices.size(), MAX_DEVICES);
+    snprintf(header, sizeof(header), "Axon Devices: %d/%d",
+             (int)axonDevices.size(), MAX_DEVICES);
     u8g2.drawStr(0, 10, header);
 
     for (int i = 0; i < 5; ++i) {
       int idx = listStartIndex + i;
-      if (idx >= (int)bodycamDevices.size())
+      if (idx >= (int)axonDevices.size())
         break;
-      auto &d = bodycamDevices[idx];
+      auto &d = axonDevices[idx];
       if (idx == currentIndex)
         u8g2.drawStr(0, 20 + i * 10, ">");
       char line[32];
       snprintf(line, sizeof(line), "%.8s | RSSI %d",
-               d.name[0] ? d.name : "Bodycam", d.rssi);
+               d.name[0] ? d.name : "Axon Device", d.rssi);
       u8g2.drawStr(10, 20 + i * 10, line);
     }
   }
