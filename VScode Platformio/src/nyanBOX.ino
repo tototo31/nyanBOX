@@ -37,7 +37,7 @@
 #include "../include/beacon_spam.h"
 #include "../include/pwnagotchi_detector.h"
 #include "../include/pindefs.h"
-#include "../include/blackout.h"
+#include "../include/sigkill.h"
 #include "../include/about.h"
 #include "../include/channel_analyzer.h"
 #include "../include/pwnagotchi_spam.h"
@@ -171,7 +171,7 @@ bool isReconApp(const char* appName) {
 
 bool isDangerousApp(const char* appName) {
   return strstr(appName, "Jammer") != nullptr ||
-         strstr(appName, "Proto Kill") != nullptr;
+         strstr(appName, "SigKill") != nullptr;
 }
 
 bool isOffensiveApp(const char* appName) {
@@ -363,7 +363,7 @@ MenuItem bleMenu[] = {
 constexpr int BLE_MENU_SIZE = sizeof(bleMenu) / sizeof(bleMenu[0]);
 
 MenuItem otherMenu[] = {
-  { "Proto Kill",   nullptr, blackoutSetup,   blackoutLoop,   cleanupRadio },
+  { "SigKill",   nullptr, sigkillSetup,   sigkillLoop,   cleanupRadio },
   { "Scanner",      nullptr, scannerSetup,    scannerLoop,    cleanupRadio },
   { "Analyzer",     nullptr, analyzerSetup,   analyzerLoop,   cleanupRadio },
   { "Setting",      nullptr, settingSetup,    settingLoop,    noCleanup },

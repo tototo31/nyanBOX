@@ -3,8 +3,8 @@
    https://github.com/jbohack/nyanBOX
    ________________________________________ */
    
-#ifndef blackout_H
-#define blackout_H
+#ifndef sigkill_H
+#define sigkill_H
 
 #include <SPI.h>
 #include <nRF24L01.h>
@@ -16,7 +16,7 @@
 #include "esp_wifi.h"
 #include "neopixel.h"
 
-void blackoutSetup();
-void blackoutLoop();
+void sigkillSetup();
+void sigkillLoop();
 
 #endif
