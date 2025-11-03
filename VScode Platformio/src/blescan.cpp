@@ -191,6 +191,11 @@ void blescanSetup() {
     u8g2.clearBuffer();
     u8g2.drawStr(0, 10, "Scanning for");
     u8g2.drawStr(0, 20, "BLE devices...");
+    char countStr[32];
+    snprintf(countStr, sizeof(countStr), "%d/%d devices", 0, MAX_DEVICES);
+    u8g2.drawStr(0, 35, countStr);
+    u8g2.setFont(u8g2_font_5x8_tr);
+    u8g2.drawStr(0, 60, "Press SEL to exit");
     u8g2.sendBuffer();
 
     if (!btStarted()) {
@@ -226,6 +231,26 @@ void blescanLoop() {
         u8g2.setFont(u8g2_font_6x10_tr);
         u8g2.drawStr(0, 10, "Scanning for");
         u8g2.drawStr(0, 20, "BLE devices...");
+        
+        char countStr[32];
+        snprintf(countStr, sizeof(countStr), "%d/%d devices", (int)bleDevices.size(), MAX_DEVICES);
+        u8g2.drawStr(0, 35, countStr);
+        
+        int barWidth = 120;
+        int barHeight = 10;
+        int barX = (128 - barWidth) / 2;
+        int barY = 42;
+        
+        u8g2.drawFrame(barX, barY, barWidth, barHeight);
+        
+        int fillWidth = (bleDevices.size() * (barWidth - 4)) / MAX_DEVICES;
+        if (fillWidth > 0) {
+            u8g2.drawBox(barX + 2, barY + 2, fillWidth, barHeight - 4);
+        }
+        
+        u8g2.setFont(u8g2_font_5x8_tr);
+        u8g2.drawStr(0, 62, "Press SEL to exit");
+        
         u8g2.sendBuffer();
         return;
     }
@@ -310,7 +335,7 @@ void blescanLoop() {
         u8g2.drawStr(0, 30, buf);
         snprintf(buf, sizeof(buf), "Age: %lus", (millis() - dev.lastSeen) / 1000);
         u8g2.drawStr(0, 40, buf);
-        u8g2.drawStr(0, 60, "Press LEFT to go back");
+        u8g2.drawStr(0, 60, "L=Back SEL=Exit");
     } else {
         u8g2.setFont(u8g2_font_6x10_tr);
         char header[32];

@@ -32,6 +32,7 @@ const unsigned long debounceTime = 200;
 static bool isScanning = false;
 static unsigned long lastScanTime = 0;
 const unsigned long scanInterval = 30000;
+const unsigned long scanDuration = 8;
 
 static bool bleInitialized = false;
 static bool scanCompleted = false;
@@ -150,7 +151,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
         if (param->scan_param_cmpl.status == ESP_BT_STATUS_SUCCESS) {
             isScanning = true;
-            esp_ble_gap_start_scanning(8);
+            esp_ble_gap_start_scanning(scanDuration);
             lastScanTime = millis();
         }
         break;
@@ -196,6 +197,11 @@ void airtagDetectorSetup() {
     u8g2.clearBuffer();
     u8g2.drawStr(0, 10, "Scanning for");
     u8g2.drawStr(0, 20, "AirTags...");
+    char countStr[32];
+    snprintf(countStr, sizeof(countStr), "%d/%d devices", 0, MAX_DEVICES);
+    u8g2.drawStr(0, 35, countStr);
+    u8g2.setFont(u8g2_font_5x8_tr);
+    u8g2.drawStr(0, 60, "Press SEL to exit");
     u8g2.sendBuffer();
 
     if (!btStarted()) {
@@ -232,6 +238,26 @@ void airtagDetectorLoop() {
         u8g2.setFont(u8g2_font_6x10_tr);
         u8g2.drawStr(0, 10, "Scanning for");
         u8g2.drawStr(0, 20, "AirTags...");
+        
+        char countStr[32];
+        snprintf(countStr, sizeof(countStr), "%d/%d devices", (int)airtagDevices.size(), MAX_DEVICES);
+        u8g2.drawStr(0, 35, countStr);
+        
+        int barWidth = 120;
+        int barHeight = 10;
+        int barX = (128 - barWidth) / 2;
+        int barY = 42;
+        
+        u8g2.drawFrame(barX, barY, barWidth, barHeight);
+        
+        int fillWidth = (airtagDevices.size() * (barWidth - 4)) / MAX_DEVICES;
+        if (fillWidth > 0) {
+            u8g2.drawBox(barX + 2, barY + 2, fillWidth, barHeight - 4);
+        }
+        
+        u8g2.setFont(u8g2_font_5x8_tr);
+        u8g2.drawStr(0, 62, "Press SEL to exit");
+        
         u8g2.sendBuffer();
         return;
     }
@@ -257,7 +283,7 @@ void airtagDetectorLoop() {
         
         scanCompleted = false;
         isScanning = true;
-        esp_ble_gap_start_scanning(8);
+        esp_ble_gap_start_scanning(scanDuration);
         lastScanTime = now;
         return;
     }
@@ -324,7 +350,7 @@ void airtagDetectorLoop() {
         snprintf(buf, sizeof(buf), "Age: %lus", (millis() - dev.lastSeen) / 1000);
         u8g2.drawStr(0, 50, buf);
         
-        u8g2.drawStr(0, 62, "L=Back C=Exit");
+        u8g2.drawStr(0, 62, "L=Back SEL=Exit");
     } else {
         char header[32];
         snprintf(header, sizeof(header), "AirTags: %d/%d",
