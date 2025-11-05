@@ -3,15 +3,12 @@
   
   <h1>nyanBOX</h1>
   <p>All-in-One Gadget for BLE and 2.4GHz Networks</p>
-  <p>Maintained by jbohack & zr_crackiin</p>
+  <p>By Nyan Devices | Maintained by jbohack & zr_crackiin</p>
 
   <!-- Badges -->
   <p>
     <a href="https://github.com/jbohack/nyanBOX" title="GitHub repo">
       <img src="https://img.shields.io/static/v1?label=nyanBOX&message=jbohack&color=purple&logo=github" alt="nyanBOX - jbohack">
-    </a>
-    <a href="https://github.com/cifertech/nrfbox" title="Original Project">
-      <img src="https://img.shields.io/badge/original%20project-CiferTech%20nRFBox-blue" alt="Original Project">
     </a>
     <a href="https://github.com/jbohack/nyanBOX">
       <img src="https://img.shields.io/github/stars/jbohack/nyanBOX?style=social" alt="stars - nyanBOX">
@@ -21,40 +18,46 @@
     </a>
   </p>
 
-  <p>
-    <a href="https://nyandevices.com">Website</a> ·
-    <a href="https://shop.nyandevices.com">Shop</a> ·
-    <a href="https://discord.gg/J5A3zDC2y8">Discord</a>
-  </p>
+  <h3>
+    <a href="https://nyandevices.com">🌐 Learn More</a> ·
+    <a href="https://shop.nyandevices.com">🛒 Buy nyanBOX</a> ·
+    <a href="https://discord.gg/J5A3zDC2y8">💬 Join Discord</a>
+  </h3>
 </div>
 
 ---
 
+## What is nyanBOX?
 
-## 📖 About nyanBOX
+**nyanBOX** is your pocket-sized 2.4GHz wireless lab. Think of it as a swiss army knife for the entire 2.4GHz spectrum - Bluetooth, BLE, WiFi, and everything in between. Perfect for security researchers, pentesters, hackers, and curious tinkerers who want to understand how wireless protocols really work.
 
-nyanBOX is a fork of the original nRFBOX project by CiferTech, now maintained by jbohack & zr_crackiin. This version includes various improvements and new features while maintaining compatibility with the original hardware.
+Built around an ESP32 with triple NRF24 modules, a crisp OLED display, and a 2500mAh rechargeable battery, nyanBOX lets you explore the invisible world of 2.4GHz radio anywhere - no cables needed. Scan for hidden Bluetooth devices, detect AirTags tracking you, find credit card skimmers, analyze RF signals, test wireless security, and way more.
 
-### 🆕 What's New
-- Updated UI with improved display layout
-- Enhanced stability and performance
-- New features and improvements to existing functionality
-- Active maintenance and support
-
-## :star2: Project Overview
-
-nyanBOX is a wireless toolkit designed to explore, analyze, and interact with various wireless communication protocols. Based on the original nRFBOX by CiferTech, this fork retains all the powerful features while introducing new improvements and providing ongoing maintenance.
-
-The device combines the ESP32 Wroom32U, NRF24 modules, an OLED display, and other components to create a multifunctional device for WiFi and Bluetooth security research, network analysis, RF signal monitoring, and wireless protocol testing.
+**→ [Check out all the features at nyandevices.com](https://nyandevices.com)**
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/530e5686-09db-4f02-aabe-80a8abcbb036" alt="nyanBOX Interface" width="650" />
 </div>
 
+---
 
-## 🎯 Features
+## ⚡ Why You'll Love It
 
-> **⚠️ Note:** Additional advanced applications can be enabled in the Settings menu.
+- **Plug & Play** – USB-C powered, works right out of the box
+- **All-Day Battery** – 2500mAh battery provides up to a full day of portable use
+- **Level Up System** – Built-in RPG mechanics track your progress as you explore wireless protocols
+- **Open Source** – Fully customizable firmware with active community development
+- **Complete 2.4GHz Toolkit** – 20+ built-in features for Bluetooth, BLE, WiFi, and RF analysis
+- **Pocket-Sized** – Take it anywhere, scan everything
+- **Active Updates** – New features added regularly by the community
+
+**Ready to dive in? [Purchase nyanBOX at shop.nyandevices.com](https://shop.nyandevices.com)**
+
+---
+
+## 🎯 What Can It Do?
+
+> **⚠️ Note:** Additional advanced tools can be enabled in the Settings menu.
 
 ### 📶 WiFi Tools
 - **WiFi Scanner** – Detects nearby WiFi access points
@@ -98,103 +101,112 @@ Hit RIGHT in the main menu to check your stats. Level up by tinkering with RF si
 
 ---
 
-## 📟 Hardware
-- **Main Controller**: ESP32 Wroom32U
-- **Wireless Modules**: NRF24 GTmini x3
-- **Display**: 0.96" OLED
-- **Connectivity**: USB-C, UART
+## 🛠️ Hardware Specs
+
+| Component  | Details                                  |
+|-----------:|------------------------------------------|
+| Microcontroller      | ESP32 WROOM‑32U (dual‑core, Wi‑Fi + BT)  |
+| Wireless Modules     | 3× NRF24 GTmini modules        |
+| Display    | 0.96" OLED                               |
+| Power      | USB‑C + 2500mAh rechargeable battery     |
+| Battery    | Up to a full day typical use             |
+| Case       | Protective enclosure included            |
+| Debug      | UART                                     |
+
+Get yours: https://shop.nyandevices.com
 
 ---
 
-## 📱 Official Firmware Flashing
+## 🚀 Getting Started
 
-For nyanBOX devices purchased from [shop.nyandevices.com](https://shop.nyandevices.com), please follow the official flashing process:
+### First Time Setup
 
-### Prerequisites
-Install the USB drivers for your operating system:
+Purchase a nyanBOX from **[shop.nyandevices.com](https://shop.nyandevices.com)** and flash the firmware in minutes using our web-based flasher!
 
-**Windows:**
-- Download and install [CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)
+### Firmware Installation & Updates
 
-**macOS:**
-- Drivers are usually included with macOS. If you experience issues, install the CP210x drivers above.
+Get up and running or update to the latest features:
 
-**Linux:**
-- Most distributions include the drivers by default. If needed, install `cp210x` kernel module.
+#### Easy Mode - Web Flasher (Recommended)
+1. Head to **[nyandevices.com/flasher](https://nyandevices.com/flasher)**
+2. Plug in your nyanBOX via USB-C
+3. Click **Install nyanBOX Firmware**
+4. Done!
 
-### Official Flashing Process
+#### Advanced - PlatformIO
+For developers who want to build from source or customize the firmware:
 
-### Option 1 — Web Flasher (Recommended)
-1. Visit **[nyandevices.com/flasher](https://nyandevices.com/flasher/)**
-2. Power off your nyanBOX device and connect it via USB-C
-3. Select your serial port and click **Install nyanBOX Firmware**
-4. Wait for the flashing process to complete
-  - **Note:** If flashing fails, please view the troubleshooting instructions on the Web Flasher
+1. Install [VS Code](https://code.visualstudio.com/) and [PlatformIO](https://platformio.org/install/ide?install=vscode)
+2. Clone or download this repo
+3. Open the folder in VS Code
+4. Hit Upload in PlatformIO
+5. Flash complete!
 
----
-
-### Option 2 — Manual Flashing via PlatformIO
-1. **Install PlatformIO & Visual Studio Code**
-   - Download and install [Visual Studio Code](https://code.visualstudio.com/)
-   - Install the [PlatformIO IDE](https://platformio.org/install/ide?install=vscode) extension
-
-2. **Get the Firmware**
-   - Download this repository from [GitHub](https://github.com/jbohack/nyanBOX) (click the green "Code" button, then "Download ZIP")
-   - Extract the ZIP file to a folder on your computer
-   - Open VS Code and select `File > Open Folder`
-   - Choose the extracted nyanBOX folder (specifically the folder with the `platformio.ini` file)
-
-3. **Flash Your Device**
-   - Connect your nyanBOX via a data transfer USB-C cable
-   - In VS Code with PlatformIO:
-     - Click the PlatformIO icon in the sidebar
-     - Select the `nyanbox-main` environment for normal firmware flashing
-     - Select "Upload" (or click the right-arrow → icon in the status bar)
-   - The firmware will automatically build and flash to your device
-   
-   - **Note:** If you have multiple serial devices connected, you may need to modify the `platformio.ini` file to specify `upload_port = portName` (e.g., `upload_port = COM3` on Windows or `upload_port = /dev/ttyUSB0` on Linux)
-   - **Can't find COM port?** Check Device Manager (Windows) or `ls /dev/tty*` (Linux/macOS)
-   - **Upload failing?** Try holding the BOOT button during the flash process
-   - **Still having issues?** Join our [Discord](https://discord.gg/J5A3zDC2y8) for support
+**Troubleshooting:**
+- Can't find the port? Install [CP210x drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)
+- Upload failing? Hold the BOOT button while flashing
+- Still stuck? Hit up our [Discord](https://discord.gg/J5A3zDC2y8) - we're here to help!
 
 ---
 
 ## ⚠️ Legal Disclaimer
 
-This project is provided for **educational and authorized security research purposes only**.  
-The creators and maintainers of **nyanBOX** disclaim all responsibility for any unauthorized or unlawful use of this software or hardware.  
-It is the sole responsibility of the user to ensure compliance with all applicable local, state, federal, and international laws.
+**Use nyanBOX responsibly.** It's built for education, security research, and authorized testing only.
 
-### 📌 Important Notes
+- Don’t attack networks you don’t own
+- Always obtain permission before testing
+- Know your local laws; some features may be restricted
+- You’re responsible for how you use it
 
-- Unauthorized scanning, signal manipulation, or interference with wireless communications may be **illegal** in your jurisdiction.  
-- Always obtain **explicit permission** before testing on networks or devices you do not own.  
-- Certain features may be **restricted or prohibited** in some countries or regions.  
-- The developers assume **no liability** for any damages, legal consequences, or misuse resulting from this project.
-
-By using **nyanBOX**, you agree to use it **only for lawful, ethical, and educational purposes**, and acknowledge your responsibility to remain informed about and compliant with all relevant laws and regulations.
+By using nyanBOX, you agree to use it ethically and legally. We're not liable for misuse.
 
 ---
 
-## 📜 License
+## ❓ FAQ
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+**Is nyanBOX legal to own?**  
+Yes, but some features may be restricted depending on your location and use. Follow local laws and obtain permission.
+
+**How long does the battery last?**  
+Up to a full day of typical use. Heavy continuous scanning may reduce runtime; lighter intermittent use can extend it.
+
+**Can I develop my own tools?**  
+Yes. The firmware is open source. You can customize and add features. Join our Discord if you need help.
+
+**Does it come with firmware pre‑installed?**  
+nyanBOX ships ready to flash. Use the web flasher at https://nyandevices.com/flasher to get running in minutes.
 
 ---
 
-## 💝 Support & Contact
+## 💬 Join the Community
 
-If you find nyanBox useful, please consider supporting the project:
-- [jbohack's Ko-fi](https://ko-fi.com/jbohack)
-- [zr_crackiin's Ko-fi](https://ko-fi.com/zrcrackiin)
+Got questions? Want to show off your device? Need help?
 
-### Maintainers
+- **[Discord](https://discord.gg/J5A3zDC2y8)** - Most active community spot
+- **[GitHub Issues](https://github.com/jbohack/nyanBOX/issues)** - Report bugs or request features
+- **[nyandevices.com](https://nyandevices.com)** - Full docs and guides
+
+---
+
+## 💝 Support the Project
+
+Love nyanBOX? Here's how you can help:
+
+- ⭐ Star this repo
+- 🛒 **[Buy nyanBOX at shop.nyandevices.com](https://shop.nyandevices.com)**
+- ☕ Buy us a coffee:
+  - [jbohack's Ko-fi](https://ko-fi.com/jbohack)
+  - [zr_crackiin's Ko-fi](https://ko-fi.com/zrcrackiin)
+- 🗣️ Spread the word!
+
+### Built By
 - [jbohack](https://github.com/jbohack)
 - [zr_crackiin](https://github.com/zRCrackiiN)
 
-## 🙏 Acknowledgements 
+---
 
-### Open Source Projects Used
+## 🙏 Thanks To
+
 - [Poor Man's 2.4 GHz Scanner](https://forum.arduino.cc/t/poor-mans-2-4-ghz-scanner/54846)
 - [arduino_oled_menu](https://github.com/upiir/arduino_oled_menu)
 - [nRF24L01-WiFi-Jammer](https://github.com/hugorezende/nRF24L01-WiFi-Jammer)
@@ -206,8 +218,20 @@ If you find nyanBox useful, please consider supporting the project:
 - [ESP Web Tools](https://esphome.github.io/esp-web-tools/)
 - [Original nRFBOX Project](https://github.com/cifertech/nrfbox)
 
-### Community
-A big thank you to all contributors and community members who have helped improve nyanBOX!
+And thanks to everyone who's contributed code, reported bugs, purchased a device, or just shared the love. You're awesome!
 
+---
 
-#BadgeLife
+## 📜 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+  <h3>Ready to explore the 2.4GHz spectrum?</h3>
+  <p>
+    <a href="https://shop.nyandevices.com"><strong>🛒 Buy nyanBOX Now</strong></a>
+  </p>
+  <p>#BadgeLife</p>
+</div>
